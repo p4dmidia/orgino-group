@@ -49,7 +49,7 @@ const AdminSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               <div className="w-full h-full rounded-full bg-black" />
             </div>
             <span className="text-3xl font-display font-black tracking-tight text-white">RGINO</span>
-            <span className="bg-red-600/10 text-red-500 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">Admin</span>
+            <span className="bg-purple-600/10 text-purple-500 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">Admin</span>
           </Link>
           <button onClick={onClose} className="lg:hidden text-zinc-500 hover:text-white">
             <X size={24} />
@@ -66,11 +66,11 @@ const AdminSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-sm transition-all group ${
                   isActive 
-                    ? "bg-red-600 text-white shadow-lg shadow-red-600/10" 
+                    ? "bg-purple-600 text-white shadow-lg shadow-purple-600/10" 
                     : "text-zinc-500 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <item.icon size={20} className={isActive ? "text-white" : "group-hover:text-red-500 transition-colors"} />
+                <item.icon size={20} className={isActive ? "text-white" : "group-hover:text-purple-500 transition-colors"} />
                 {item.label}
               </Link>
             );
@@ -80,7 +80,7 @@ const AdminSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         <div className="p-4 border-t border-white/5">
           <div className="bg-zinc-900/50 p-4 rounded-3xl border border-white/5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border-2 border-red-500 overflow-hidden">
+              <div className="w-10 h-10 rounded-full border-2 border-purple-500 overflow-hidden">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin Avatar" />
               </div>
               <div>
@@ -90,7 +90,7 @@ const AdminSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             </div>
             <button 
               onClick={() => navigate("/admin/login")}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/10 hover:text-red-500 text-zinc-500 text-xs font-bold transition-all"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 hover:bg-purple-500/10 hover:text-purple-500 text-zinc-500 text-xs font-bold transition-all"
             >
               <LogOut size={14} />
               Encerrar Sessão
@@ -137,13 +137,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <button className="relative p-2 text-zinc-400 hover:text-white transition-colors">
               <Bell size={22} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full" />
             </button>
             
             <div className="h-8 w-[1px] bg-white/10 hidden sm:block" />
             
             <div className="hidden xs:flex flex-col items-end">
-              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Servidor</span>
+              <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Servidor</span>
               <span className="text-xs font-bold text-emerald-400">ONLINE</span>
             </div>
           </div>

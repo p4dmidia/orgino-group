@@ -17,8 +17,8 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-black flex flex-col md:flex-row overflow-hidden">
       {/* Left Side: Admin Identity */}
       <div className="hidden md:flex md:w-1/2 bg-zinc-950 relative items-center justify-center p-12 overflow-hidden border-r border-white/5">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-red-500/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-orange-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
         
         <div className="relative z-10 max-w-lg space-y-12">
           <div className="flex items-center gap-4 mb-16">
@@ -26,7 +26,7 @@ export default function AdminLogin() {
               <div className="w-full h-full rounded-full bg-black" />
             </div>
             <span className="text-6xl font-display font-black tracking-tighter text-white">RGINO</span>
-            <span className="bg-red-600/10 text-red-500 text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest">Admin</span>
+            <span className="bg-purple-600/10 text-purple-500 text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest">Admin</span>
           </div>
 
           <div className="space-y-6">
@@ -35,7 +35,7 @@ export default function AdminLogin() {
               animate={{ opacity: 1, x: 0 }}
               className="text-5xl font-display font-bold leading-tight text-white"
             >
-              Controle <br /> <span className="text-red-500 underline decoration-red-500/30 underline-offset-8">Centralizado</span> <br /> da Operação.
+              Controle <br /> <span className="text-purple-500 underline decoration-purple-500/30 underline-offset-8">Centralizado</span> <br /> da Operação.
             </motion.h1>
             <p className="text-zinc-400 text-lg leading-relaxed">
               Área restrita para gestão de infraestrutura, auditoria financeira e moderação de rede. 
@@ -44,7 +44,7 @@ export default function AdminLogin() {
           </div>
 
           <div className="flex items-center gap-4 text-zinc-500 font-mono text-xs">
-            <Terminal size={16} className="text-red-500" />
+            <Terminal size={16} className="text-purple-500" />
             <span>SECURE_LAYER_ID: ORG_ADM_B2_88</span>
           </div>
         </div>
@@ -79,11 +79,11 @@ export default function AdminLogin() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-300 ml-1">Admin Key / Email</label>
               <div className="relative group">
-                <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-500 transition-colors" />
+                <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
                 <input
                   type="text"
                   placeholder="admin.master@orgino.group"
-                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-zinc-600"
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder:text-zinc-600"
                   required
                 />
               </div>
@@ -94,11 +94,11 @@ export default function AdminLogin() {
                 <label className="text-sm font-medium text-zinc-300">Senha Administrativa</label>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-500 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-zinc-600"
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder:text-zinc-600"
                   required
                 />
               </div>
@@ -106,7 +106,7 @@ export default function AdminLogin() {
 
             <button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 group transition-all shadow-xl shadow-red-600/20 hover:scale-[1.01] active:scale-[0.98]"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 group transition-all shadow-xl shadow-purple-600/20 hover:scale-[1.01] active:scale-[0.98]"
             >
               Acessar Terminal Admin
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

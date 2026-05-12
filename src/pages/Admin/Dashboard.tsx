@@ -28,8 +28,8 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-10">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-red-500/20 rounded-2xl border border-red-500/20">
-            <ShieldCheck className="text-red-500 w-8 h-8" />
+          <div className="p-3 bg-purple-500/20 rounded-2xl border border-purple-500/20">
+            <ShieldCheck className="text-purple-500 w-8 h-8" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white">Painel Administrativo</h1>
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
                           <button className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl transition-all">
                             <CheckCircle size={18} />
                           </button>
-                          <button className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all">
+                          <button className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-500 rounded-xl transition-all">
                             <XCircle size={18} />
                           </button>
                         </div>
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
                 { type: "Comentário", user: "@hater_99", reason: "Spam", time: "Há 15m" },
                 { type: "Curso", user: "Pedro Tech", reason: "Review pendente", time: "Há 1h" },
               ].map((item, i) => (
-                <div key={i} className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl hover:border-red-500/20 transition-all group">
+                <div key={i} className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl hover:border-purple-500/20 transition-all group">
                   <div className="flex justify-between items-start mb-3">
                     <span className="text-[10px] font-black bg-white/5 px-2 py-1 rounded-lg text-zinc-400 uppercase">{item.type}</span>
                     <span className="text-[10px] text-zinc-600 font-bold">{item.time}</span>
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-zinc-500 mb-4">{item.reason}</p>
                   <div className="flex gap-2">
                     <button className="flex-1 bg-white/5 hover:bg-white/10 text-xs font-bold py-2 rounded-xl transition-all">Revisar</button>
-                    <button className="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all">
+                    <button className="p-2 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white rounded-xl transition-all">
                       <XCircle size={14} />
                     </button>
                   </div>
