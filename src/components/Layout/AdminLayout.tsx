@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   LayoutDashboard, 
   Users, 
@@ -8,7 +8,9 @@ import {
   Settings,
   LogOut,
   Bell,
-  Search
+  Search,
+  X,
+  Menu
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
