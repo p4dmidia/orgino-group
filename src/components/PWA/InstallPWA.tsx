@@ -16,8 +16,11 @@ export default function InstallPWA() {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Show the install UI after a short delay if not installed
-      if (!isInstalled) {
+      
+      // Only show if NOT installed AND on a mobile/tablet device (< 1024px)
+      const isMobileOrTablet = window.innerWidth < 1024;
+      
+      if (!isInstalled && isMobileOrTablet) {
         setTimeout(() => setIsVisible(true), 3000);
       }
     };
