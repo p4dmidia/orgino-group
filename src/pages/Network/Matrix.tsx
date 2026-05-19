@@ -1,52 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout/Layout";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, UserPlus, TrendingUp, ChevronDown, Search, GitGraph, List } from "lucide-react";
+import { Users, UserPlus, TrendingUp, ChevronDown, Search, GitGraph, List, Loader2 } from "lucide-react";
 import NetworkTree from "../../components/Network/NetworkTree";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { Tables } from "../../types/database";
 
-const MOCK_NETWORK = {
-  id: "root",
-  name: "Você (Alex Rivera)",
-  level: "Master",
-  referrals: 8,
-  earnings: "R$ 4.250",
-  children: [
-    {
-      id: "1",
-      name: "Beatriz Santos",
-      level: "Influencer",
-      referrals: 12,
-      earnings: "R$ 1.100",
-      children: [
-        { id: "1-1", name: "Carlos Lima", level: "Iniciante", referrals: 2, earnings: "R$ 150" },
-        { id: "1-2", name: "Daniela Oliveira", level: "Influencer", referrals: 5, earnings: "R$ 400" },
-      ]
-    },
-    {
-      id: "2",
-      name: "Eduardo Costa",
-      level: "Influencer",
-      referrals: 4,
-      earnings: "R$ 850",
-      children: [
-        { id: "2-1", name: "Fernanda Silva", level: "Iniciante", referrals: 1, earnings: "R$ 50" },
-        { id: "2-2", name: "Guilherme Reis", level: "Iniciante", referrals: 0, earnings: "R$ 0" },
-      ]
-    },
-    {
-      id: "3",
-      name: "Gabriel Souza",
-      level: "Iniciante",
-      referrals: 0,
-      earnings: "R$ 0",
-      children: [
-        { id: "3-1", name: "Isabela Rocha", level: "Iniciante", referrals: 0, earnings: "R$ 0" },
-      ]
-    }
-  ]
+type NetworkMember = {
+  id: string | number;
+  full_name: string;
+  role: string;
+  referral_code: string;
+  created_at: string;
+  children?: NetworkMember[];
+  direct_count?: number;
 };
 
-const NetworkNode = ({ node, depth = 0 }: { node: any, depth?: number }) => (
+const NetworkNode = ({ node, depth = 0 }: { node: NetworkMember, depth?: number }) => (
   <div className="space-y-4">
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -56,30 +27,34 @@ const NetworkNode = ({ node, depth = 0 }: { node: any, depth?: number }) => (
     >
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-full bg-purple-gradient p-[2px]">
-          <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${node.name}`} alt="Avatar" />
+          <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden bg-white/5">
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${node.full_name}`} alt="Avatar" />
           </div>
         </div>
         <div>
-          <h4 className="font-bold text-lg">{node.name}</h4>
-          <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">{node.level} • Nível {depth}</p>
+          <h4 className="font-bold text-lg text-white">{node.full_name}</h4>
+          <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">
+            {node.role} • Nível {depth}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-8">
         <div className="text-center">
           <p className="text-[10px] text-slate-500 uppercase font-bold">Diretos</p>
-          <p className="font-bold text-primary">{node.referrals}</p>
+          <p className="font-bold text-primary">{node.direct_count || 0}</p>
         </div>
         <div className="text-center">
-          <p className="text-[10px] text-slate-500 uppercase font-bold">Ganhos</p>
-          <p className="font-bold text-emerald-400">{node.earnings}</p>
+          <p className="text-[10px] text-slate-500 uppercase font-bold">Desde</p>
+          <p className="font-bold text-emerald-400">
+            {new Date(node.created_at).toLocaleDateString('pt-BR')}
+          </p>
         </div>
         <ChevronDown size={20} className="text-slate-500 group-hover:text-white transition-colors" />
       </div>
     </motion.div>
 
-    {node.children && (
+    {node.children && node.children.length > 0 && (
       <div className="pl-12 border-l border-white/10 space-y-4 ml-6">
         {node.children.map((child: any) => (
           <NetworkNode key={child.id} node={child} depth={depth + 1} />
@@ -90,14 +65,75 @@ const NetworkNode = ({ node, depth = 0 }: { node: any, depth?: number }) => (
 );
 
 export default function Matrix() {
+  const { profile, loading: authLoading } = useAuth();
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
+  const [referrals, setReferrals] = useState<NetworkMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, levels: 0, directActive: 0 });
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchNetwork = async () => {
+      setLoading(true);
+      try {
+        // Fetch Level 1 (Directs)
+        const { data: level1, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('sponsor_id', profile.id);
+
+        if (error) throw error;
+
+        // Fetch counts for each direct
+        const members = await Promise.all((level1 || []).map(async (m) => {
+          const { count } = await supabase
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('sponsor_id', m.id);
+          
+          return {
+            ...m,
+            direct_count: count || 0
+          } as NetworkMember;
+        }));
+
+        setReferrals(members);
+        setStats({
+          total: members.length, // Simplified total
+          levels: 1,
+          directActive: members.length
+        });
+      } catch (err) {
+        console.error('Error fetching network:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNetwork();
+  }, [profile]);
+
+  const rootNode: NetworkMember = {
+    id: profile?.id || 'root',
+    full_name: `Você (${profile?.full_name || 'Usuário'})`,
+    role: profile?.role || 'Master',
+    referral_code: profile?.referral_code || '',
+    created_at: profile?.created_at || new Date().toISOString(),
+    children: referrals,
+    direct_count: referrals.length
+  };
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-display font-bold mb-2">Minha Rede</h1>
+            <h1 className="text-4xl font-display font-bold mb-2 text-white">Minha Rede</h1>
             <p className="text-slate-400 text-lg">Acompanhe o crescimento da sua matriz <span className="text-primary font-bold">5x10</span>.</p>
           </div>
           
@@ -122,12 +158,8 @@ export default function Matrix() {
 
             <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
               <Search size={18} className="text-slate-500" />
-              <input type="text" placeholder="Buscar afiliado..." className="bg-transparent border-none outline-none text-sm w-40" />
+              <input type="text" placeholder="Buscar afiliado..." className="bg-transparent border-none outline-none text-sm w-40 text-white" />
             </div>
-            <button className="bg-purple-gradient px-6 py-2 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-lg shadow-primary/20">
-              <UserPlus size={20} />
-              Novo Convite
-            </button>
           </div>
         </div>
 
@@ -136,61 +168,61 @@ export default function Matrix() {
           <div className="glass-card p-6 rounded-3xl border-white/5">
             <div className="flex items-center gap-3 mb-4 text-primary">
               <Users size={20} />
-              <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Total na Rede</span>
+              <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Diretos</span>
             </div>
-            <h3 className="text-4xl font-display font-bold">1,240</h3>
-            <p className="text-emerald-400 text-xs font-bold mt-2">+48 novos este mês</p>
+            <h3 className="text-4xl font-display font-bold text-white">{stats.total}</h3>
+            <p className="text-emerald-400 text-xs font-bold mt-2">Crescimento constante</p>
           </div>
           
           <div className="glass-card p-6 rounded-3xl border-white/5">
             <div className="flex items-center gap-3 mb-4 text-accent">
               <TrendingUp size={20} />
-              <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Níveis Ativos</span>
+              <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Níveis</span>
             </div>
-            <h3 className="text-4xl font-display font-bold">5 / 10</h3>
-            <p className="text-slate-500 text-xs font-bold mt-2">Próximo nível: Nível 6</p>
+            <h3 className="text-4xl font-display font-bold text-white">{stats.levels} / 10</h3>
+            <p className="text-slate-500 text-xs font-bold mt-2">Aumente sua profundidade</p>
           </div>
 
           <div className="glass-card p-6 rounded-3xl border-white/5">
             <div className="flex items-center gap-3 mb-4 text-emerald-400">
               <Users size={20} />
-              <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Diretos Ativos</span>
+              <span className="text-xs uppercase font-bold tracking-widest text-slate-400">Status</span>
             </div>
-            <h3 className="text-4xl font-display font-bold">42</h3>
-            <p className="text-slate-500 text-xs font-bold mt-2">Sua meta: 50 diretos</p>
+            <h3 className="text-4xl font-display font-bold text-white">Ativo</h3>
+            <p className="text-slate-500 text-xs font-bold mt-2">Rede em expansão</p>
           </div>
         </div>
 
         {/* Content Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-display font-bold">
+            <h2 className="text-2xl font-display font-bold text-white">
               {viewMode === "list" ? "Estrutura de Níveis" : "Visualização Gráfica"}
             </h2>
           </div>
 
-          <AnimatePresence mode="wait">
-            {viewMode === "list" ? (
-              <motion.div
-                key="list"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <NetworkNode node={MOCK_NETWORK} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="tree"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="glass-card border-white/5 rounded-[3rem] overflow-hidden bg-black/40"
-              >
-                <NetworkTree data={MOCK_NETWORK} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              {viewMode === "list" ? (
+                <motion.div
+                  key="list"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  <NetworkNode node={rootNode} />
+                </motion.div>
+              ) : (
+                <div key="tree">
+                  <NetworkTree data={rootNode as any} />
+                </div>
+              )}
+            </AnimatePresence>
+          )}
         </div>
       </div>
     </Layout>

@@ -1,164 +1,298 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "../../components/Layout/Layout";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, 
-  Filter, 
   Play, 
-  Clock, 
-  BookOpen, 
-  Trophy,
-  Star,
-  ChevronRight,
-  Users
+  Star, 
+  ChevronRight, 
+  Loader2,
+  Info,
+  Flame,
+  Sparkles,
+  Zap,
+  TrendingUp,
+  Bookmark
 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { mockCourses } from "../../mocks/courseData";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
+import { Tables } from "../../types/database";
+
+type Course = Tables<'courses'> & {
+  instructor?: { full_name: string } | null;
+};
 
 export default function Catalog() {
+  const navigate = useNavigate();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('courses')
+          .select(`
+            *,
+            instructor:user_profiles (full_name)
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setCourses(data as any);
+      } catch (err) {
+        console.error('Error fetching courses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  const categories = ["Todos", ...new Set(courses.map(c => c.category).filter(Boolean))] as string[];
+  
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "Todos" || course.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const featuredCourse = courses[0]; // O mais recente como destaque
+  const trendingCourses = [...courses].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 4);
+  const recentCourses = courses.slice(0, 6); // Mostrar os 6 mais novos na seção de recentes
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto space-y-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-4xl font-display font-bold mb-2">Área de Cursos</h1>
-            <p className="text-slate-400 text-lg">Aprenda com os melhores produtores da nossa comunidade.</p>
-          </div>
-          
-          <div className="flex gap-4">
-            <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
-              <Search size={18} className="text-slate-500" />
-              <input type="text" placeholder="O que deseja aprender?" className="bg-transparent border-none outline-none text-sm w-48" />
-            </div>
-          </div>
-        </div>
-
-        {/* Categories */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-          {["Todos", "Marketing", "Vendas", "Lifestyle", "Negócios", "Finanças", "Edição"].map((cat, i) => (
-            <button 
-              key={i}
-              className={`px-6 py-2 rounded-full border border-white/10 text-sm font-bold whitespace-nowrap transition-all ${i === 0 ? 'bg-primary text-white border-primary' : 'hover:bg-white/5 text-slate-400'}`}
+      <div className="space-y-16 pb-20">
+        {/* HERO FEATURED SECTION (Estilo Netflix) */}
+        <AnimatePresence>
+          {featuredCourse && selectedCategory === "Todos" && !searchQuery && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative h-[600px] w-full rounded-[3.5rem] overflow-hidden group border border-white/5 shadow-2xl"
             >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Continue Watching */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-display font-bold">Continue Assistindo</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {mockCourses.filter(c => c.progress > 0 && c.progress < 100).map((course) => (
-              <Link to={`/cursos/player/${course.id}`} key={course.id} className="glass-card p-6 rounded-[2rem] border-white/5 flex gap-6 group hover:border-primary/30 transition-all cursor-pointer">
-                <div className="w-40 h-24 rounded-2xl overflow-hidden relative shrink-0">
-                  <img src={course.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={course.title} />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="text-white fill-white" size={32} />
-                  </div>
-                </div>
-                <div className="flex-1 flex flex-col justify-between py-1">
-                  <div>
-                    <h4 className="font-bold text-lg leading-tight mb-1">{course.title}</h4>
-                    <p className="text-xs text-slate-500">{course.instructor}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: `${course.progress}%` }} />
-                    </div>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{course.progress}% concluído</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Course Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-display font-bold">Explorar Cursos</h2>
-            <button className="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
-              Ver todos <ChevronRight size={16} />
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockCourses.map((course) => (
-              <motion.div 
-                key={course.id}
-                whileHover={{ y: -10 }}
-                className="glass-card rounded-[2.5rem] border-white/5 overflow-hidden group"
-              >
-                <div className="aspect-video relative overflow-hidden">
-                  <img src={course.thumbnail} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase border border-white/10">
-                    {course.category}
-                  </div>
-                  <div className="absolute top-4 right-4 bg-emerald-400 text-black px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1">
-                    <Star size={10} fill="currentColor" /> 4.9
-                  </div>
-                </div>
-                
-                <div className="p-8 space-y-4">
-                  <h3 className="text-xl font-display font-bold group-hover:text-primary transition-colors">{course.title}</h3>
-                  
-                  <div className="flex items-center gap-4 text-slate-400 text-sm">
-                    <div className="flex items-center gap-1">
-                      <BookOpen size={16} />
-                      <span>{course.lessons} aulas</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock size={16} />
-                      <span>4h 30m</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full border border-white/10 overflow-hidden">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructor}`} alt="Instructor" />
-                      </div>
-                      <span className="text-xs font-bold text-slate-300">{course.instructor}</span>
-                    </div>
-                    
-                    <Link to={`/cursos/detalhes/${course.id}`} className="bg-white/5 hover:bg-primary text-white p-2 rounded-xl transition-all group-hover:scale-110">
-                      <Play size={18} fill="currentColor" />
-                    </Link>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Featured Section */}
-        <div className="glass-card rounded-[3rem] border-white/5 p-12 bg-purple-gradient relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
-          <div className="absolute inset-0 opacity-10 pointer-events-none">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white blur-[100px] rounded-full" />
-          </div>
-          
-          <div className="md:w-1/2 space-y-6 relative z-10">
-            <span className="bg-white/20 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest">Destaque</span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold leading-tight">Torne-se um Produtor de Elite</h2>
-            <p className="text-white/80 text-lg">Publique seus próprios cursos, gerencie alunos e escale seus lucros dentro da plataforma Orgino.</p>
-            <button className="bg-white text-black px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-transform shadow-2xl">
-              Começar a Ensinar
-            </button>
-          </div>
-          
-          <div className="md:w-1/2 grid grid-cols-2 gap-4 relative z-10">
-            {[
-              { icon: <Trophy />, title: "Selo de Elite", desc: "Reconhecimento" },
-              { icon: <Users />, title: "Dashboard", desc: "Gestão completa" },
-            ].map((item, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/10">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4">{item.icon}</div>
-                <h4 className="font-bold">{item.title}</h4>
-                <p className="text-xs text-white/60">{item.desc}</p>
+              {/* Background Image with Overlay */}
+              <div className="absolute inset-0">
+                <img 
+                  src={featuredCourse.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1600"} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s]"
+                  alt=""
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
               </div>
-            ))}
-          </div>
+
+              {/* Content */}
+              <div className="absolute inset-0 p-12 md:p-20 flex flex-col justify-center max-w-4xl space-y-8">
+                <div className="flex items-center gap-3">
+                   <div className="px-3 py-1 bg-primary rounded-lg text-[10px] font-black text-white uppercase tracking-widest">
+                      Destaque do Mês
+                   </div>
+                   <div className="flex items-center gap-1 text-yellow-500">
+                      <Star size={14} fill="currentColor" />
+                      <span className="text-xs font-black uppercase">Elite</span>
+                   </div>
+                </div>
+
+                <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-tight">
+                  {featuredCourse.title}
+                </h1>
+
+                <p className="text-zinc-300 text-lg md:text-xl line-clamp-3 max-w-2xl font-medium">
+                  {featuredCourse.description}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-4">
+                   <button 
+                    onClick={() => navigate(`/cursos/player/${featuredCourse.id}`)}
+                    className="bg-white text-black px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5"
+                   >
+                     <Play size={20} fill="currentColor" />
+                     Assistir Agora
+                   </button>
+                   <button 
+                    onClick={() => navigate(`/cursos/detalhes/${featuredCourse.id}`)}
+                    className="bg-white/10 backdrop-blur-md text-white px-8 py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-3 hover:bg-white/20 transition-all border border-white/10"
+                   >
+                     <Info size={20} />
+                     Mais Detalhes
+                   </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* TOOLBAR & SEARCH */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+           <div className="flex items-center gap-4 overflow-x-auto no-scrollbar w-full md:w-auto">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border ${selectedCategory === cat ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "bg-white/5 border-white/5 text-zinc-500 hover:text-white"}`}
+                >
+                  {cat}
+                </button>
+              ))}
+           </div>
+
+           <div className="relative group w-full md:w-96">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-primary transition-colors" size={20} />
+              <input 
+                type="text" 
+                placeholder="O que você quer aprender?"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-zinc-900/50 border border-white/5 rounded-[1.5rem] pl-14 pr-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold placeholder:text-zinc-700"
+              />
+           </div>
+        </div>
+
+        {/* CONTENT ROWS */}
+        <div className="space-y-20">
+          {/* Row 1: Tendências / Filtrados */}
+          <section className="space-y-8">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                   <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                      <TrendingUp size={24} />
+                   </div>
+                   <h2 className="text-3xl font-black text-white tracking-tighter">
+                     {selectedCategory === "Todos" ? "Tendências na Orgino" : selectedCategory}
+                   </h2>
+                </div>
+                <button 
+                  onClick={() => setSelectedCategory("Todos")}
+                  className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors"
+                >
+                   Ver Todos <ChevronRight size={14} />
+                </button>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {(selectedCategory === "Todos" ? trendingCourses : filteredCourses).map((course, idx) => (
+                  <motion.div 
+                    key={course.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    onClick={() => navigate(`/cursos/player/${course.id}`)}
+                    className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden group cursor-pointer border border-white/5 shadow-xl transition-all hover:scale-[1.03] hover:shadow-primary/10"
+                  >
+                    <img 
+                      src={course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800"} 
+                      className="w-full h-full object-cover group-hover:brightness-50 transition-all duration-500"
+                      alt={course.title || ""}
+                    />
+                    
+                    {/* Hover Info */}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-all duration-500 bg-gradient-to-t from-black via-black/20 to-transparent">
+                       <div className="flex items-center gap-2 mb-2">
+                          <div className="bg-primary p-2 rounded-full">
+                             <Play size={14} fill="currentColor" className="text-white" />
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] font-black text-white uppercase tracking-widest">
+                             <Sparkles size={10} className="text-yellow-500" />
+                             {course.points} Pontos
+                          </div>
+                       </div>
+                       <h3 className="text-xl font-black text-white tracking-tight leading-tight line-clamp-2">
+                         {course.title}
+                       </h3>
+                       <div className="mt-4 flex items-center gap-3">
+                          <button className="bg-white/10 hover:bg-white text-white hover:text-black p-2.5 rounded-xl transition-all border border-white/10">
+                             <Bookmark size={16} />
+                          </button>
+                          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{course.category}</span>
+                       </div>
+                    </div>
+                  </motion.div>
+                ))}
+             </div>
+
+             {filteredCourses.length === 0 && (
+               <div className="py-20 text-center bg-zinc-900/20 rounded-[3rem] border border-dashed border-white/5">
+                  <p className="text-zinc-600 font-bold">Nenhum curso encontrado com esses critérios.</p>
+               </div>
+             )}
+          </section>
+
+          {/* Row 2: Promo Banner */}
+          <section className="relative h-80 w-full rounded-[3.5rem] overflow-hidden group shadow-2xl">
+             <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-zinc-950" />
+             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+             
+             <div className="absolute inset-0 p-12 flex flex-col md:flex-row items-center justify-between gap-10">
+                <div className="space-y-4 max-w-xl text-center md:text-left">
+                   <div className="flex items-center justify-center md:justify-start gap-2">
+                      <Flame size={20} className="text-orange-500" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Oportunidade Orgino</span>
+                   </div>
+                   <h2 className="text-4xl font-black text-white tracking-tighter">Alcance o Nível Master</h2>
+                   <p className="text-white/70 font-medium">Complete os cursos de formação básica e libere bônus exclusivos na sua rede MMN.</p>
+                </div>
+                 <button 
+                  onClick={() => navigate('/carreira')}
+                  className="bg-white text-primary px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-2xl"
+                 >
+                    Conhecer Plano de Carreira
+                 </button>
+             </div>
+          </section>
+
+          {/* Row 3: Mais Categorias (Grid Alternativo) */}
+          {selectedCategory === "Todos" && (
+            <section className="space-y-8">
+               <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-600/10 rounded-2xl text-blue-600">
+                     <Zap size={24} />
+                  </div>
+                  <h2 className="text-3xl font-black text-white tracking-tighter">Recém Adicionados</h2>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {recentCourses.slice(0, 3).map((course) => (
+                    <div 
+                      key={course.id}
+                      onClick={() => navigate(`/cursos/player/${course.id}`)}
+                      className="bg-zinc-900/40 border border-white/5 p-6 rounded-[2.5rem] group cursor-pointer hover:border-primary/30 transition-all"
+                    >
+                       <div className="aspect-video rounded-3xl overflow-hidden mb-6">
+                          <img src={course.thumbnail_url || ""} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" alt="" />
+                       </div>
+                       <div className="space-y-3">
+                          <h4 className="text-lg font-bold text-white line-clamp-1">{course.title}</h4>
+                          <p className="text-zinc-500 text-sm line-clamp-2">{course.description}</p>
+                          <div className="pt-4 flex items-center justify-between border-t border-white/5">
+                             <span className="text-[10px] font-black text-primary uppercase">{course.category}</span>
+                             <div className="flex items-center gap-1 text-zinc-400">
+                                <Star size={12} fill="currentColor" className="text-yellow-500" />
+                                <span className="text-xs font-bold">5.0</span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </section>
+          )}
         </div>
       </div>
     </Layout>

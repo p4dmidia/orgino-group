@@ -1,16 +1,72 @@
-import React from "react";
-import { motion } from "motion/react";
-import { Lock, ShieldAlert, ArrowRight, Terminal, Globe } from "lucide-react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Lock, ShieldAlert, ArrowRight, Terminal, Globe, Loader2, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import logoImg from "../../assets/logo.png";
+import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate admin login
-    navigate("/admin");
+    setLoading(true);
+
+    console.log("=== INICIANDO TENTATIVA DE LOGIN ADM ===");
+    console.log("Email:", email);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error("=== ERRO RETORNADO PELO SUPABASE AUTH ===");
+        console.error("Erro completo:", error);
+        console.error("Status HTTP:", error.status);
+        console.error("Código do Erro:", error.code);
+        console.error("Mensagem:", error.message);
+        console.error("=========================================");
+        throw error;
+      }
+
+      console.log("Login com senha feito com sucesso! Buscando perfil...");
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('mocha_user_id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error("=== ERRO AO BUSCAR PERFIL ===");
+        console.error(profileError);
+        throw profileError;
+      }
+
+      console.log("Perfil obtido:", profile);
+
+      if (profile?.role !== 'admin') {
+        await supabase.auth.signOut();
+        throw new Error("Acesso negado. Somente administradores podem acessar este terminal.");
+      }
+
+      toast.success("Autenticação Master confirmada!");
+      navigate("/admin");
+    } catch (err: any) {
+      console.error("=== CAPTURADO NO CATCH DO LOGIN ===");
+      console.error("Objeto do erro:", err);
+      console.error("Mensagem final exibida:", err.message);
+      console.error("====================================");
+      toast.error(err.message || "Erro na autenticação administrativa");
+    } finally {
+      setLoading(false);
+      console.log("=== FIM DA TENTATIVA DE LOGIN ADM ===");
+    }
   };
 
   return (
@@ -81,7 +137,9 @@ export default function AdminLogin() {
               <div className="relative group">
                 <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
                 <input
-                  type="text"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin.master@orgino.group"
                   className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder:text-zinc-600"
                   required
@@ -96,20 +154,37 @@ export default function AdminLogin() {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder:text-zinc-600"
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all placeholder:text-zinc-600"
                   required
+                  autoComplete="current-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 group transition-all shadow-xl shadow-purple-600/20 hover:scale-[1.01] active:scale-[0.98]"
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 group transition-all shadow-xl shadow-purple-600/20 hover:scale-[1.01] active:scale-[0.98]"
             >
-              Acessar Terminal Admin
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {loading ? (
+                <Loader2 className="animate-spin" size={24} />
+              ) : (
+                <>
+                  Acessar Terminal Admin
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
           </form>
 

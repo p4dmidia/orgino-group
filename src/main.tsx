@@ -2,7 +2,10 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { AuthProvider } from './contexts/AuthContext.tsx';
+import { NotificationProvider } from './contexts/NotificationContext.tsx';
 
+// Register Service Worker
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -13,9 +16,15 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+import { Toaster } from 'sonner';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <NotificationProvider>
+        <App />
+        <Toaster position="top-right" richColors closeButton />
+      </NotificationProvider>
+    </AuthProvider>
   </StrictMode>,
 );

@@ -10,16 +10,20 @@ import {
   Bell,
   Search,
   X,
-  Menu
+  Menu,
+  Building2,
+  Video
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const adminMenuItems = [
-  { icon: LayoutDashboard, label: "Overview", path: "/admin" },
+  { icon: LayoutDashboard, label: "Visão Geral", path: "/admin" },
   { icon: Users, label: "Usuários", path: "/admin/usuarios" },
   { icon: ArrowUpCircle, label: "Saques", path: "/admin/saques" },
   { icon: AlertTriangle, label: "Moderação", path: "/admin/moderacao" },
   { icon: ShieldCheck, label: "Cursos", path: "/admin/cursos" },
+  { icon: Building2, label: "Parceiros", path: "/admin/parceiros" },
+  { icon: Video, label: "Vídeos", path: "/admin/videos" },
   { icon: Settings, label: "Configurações", path: "/admin/config" },
 ];
 
@@ -84,7 +88,7 @@ const AdminSidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin Avatar" />
               </div>
               <div>
-                <p className="text-xs font-black text-white uppercase tracking-widest">Master Admin</p>
+                <p className="text-xs font-black text-white uppercase tracking-widest">Administrador Master</p>
                 <p className="text-[10px] text-zinc-500 font-bold">Acesso Total</p>
               </div>
             </div>
@@ -144,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             
             <div className="hidden xs:flex flex-col items-end">
               <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Servidor</span>
-              <span className="text-xs font-bold text-emerald-400">ONLINE</span>
+              <span className="text-xs font-bold text-emerald-400">ATIVO</span>
             </div>
           </div>
         </header>

@@ -1,237 +1,784 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout/Layout";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Play, 
-  Pause, 
-  SkipForward, 
-  SkipBack, 
-  Volume2, 
-  Maximize, 
   CheckCircle, 
   FileText, 
   MessageSquare, 
   ChevronDown, 
   ChevronUp,
+  Download,
+  Loader2,
+  AlertCircle,
+  Clock,
+  ArrowLeft,
+  Share2,
+  Bookmark,
+  MonitorPlay,
   Star,
-  Download
+  Send,
+  Plus,
+  Trash2,
+  BookOpen,
+  Award,
+  User as UserIcon
 } from "lucide-react";
-import { useParams } from "react-router-dom";
-import { mockCourses } from "../../mocks/courseData";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
+import { Tables } from "../../types/database";
+import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "sonner";
+import CertificateModal from "../../components/Courses/CertificateModal";
 
+type Course = Tables<'courses'> & {
+  instructor?: { full_name: string } | null;
+};
+
+type Module = Tables<'course_modules'> & {
+  lessons: Tables<'lessons'>[];
+};
+
+type Lesson = Tables<'lessons'>;
+
+// Componente principal do Player de Cursos
 export default function CoursePlayer() {
   const { id } = useParams();
-  const course = mockCourses.find(c => c.id === Number(id)) || mockCourses[0];
-  const [activeTab, setActiveTab] = useState("content");
-  const [currentLesson, setCurrentLesson] = useState(1);
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("about");
+  const [expandedModules, setExpandedModules] = useState<number[]>([]);
+  
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [showAddMaterial, setShowAddMaterial] = useState(false);
+  const [newMaterial, setNewMaterial] = useState({ title: "", url: "" });
+  const [isAddingMaterial, setIsAddingMaterial] = useState(false);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [isCompleting, setIsCompleting] = useState(false);
 
-  const modules = [
-    {
-      title: "Módulo 1: Introdução Estratégica",
-      lessons: [
-        { id: 1, title: "Boas-vindas e Mindset", duration: "12:45", completed: true },
-        { id: 2, title: "O Novo Algoritmo", duration: "24:30", completed: true },
-        { id: 3, title: "Ferramentas Indispensáveis", duration: "18:20", completed: false },
-      ]
-    },
-    {
-      title: "Módulo 2: Criação de Conteúdo Viral",
-      lessons: [
-        { id: 4, title: "Storytelling que Prende", duration: "15:10", completed: false },
-        { id: 5, title: "Edição de Alto Nível", duration: "32:00", completed: false },
-        { id: 6, title: "Análise de Métricas", duration: "21:45", completed: false },
-      ]
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchCourseData = async () => {
+      setLoading(true);
+      try {
+        // 1. Buscar Curso
+        const { data: courseData, error: courseError } = await supabase
+          .from('courses')
+          .select(`
+            *,
+            instructor:user_profiles (full_name)
+          `)
+          .eq('id', id)
+          .single();
+
+        if (courseError) throw courseError;
+        setCourse(courseData as any);
+
+        // 2. Buscar Módulos
+        const { data: moduleData, error: moduleError } = await supabase
+          .from('course_modules')
+          .select('*')
+          .eq('course_id', id)
+          .order('order_index', { ascending: true });
+
+        if (moduleError) throw moduleError;
+
+        // 3. Buscar Todas as Aulas e Agrupar
+        const { data: lessonData, error: lessonError } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('course_id', id)
+          .order('order_index', { ascending: true });
+
+        if (lessonError) throw lessonError;
+
+        const modulesWithLessons = (moduleData || []).map(mod => ({
+          ...mod,
+          lessons: (lessonData || []).filter(lesson => lesson.module_id === mod.id)
+        }));
+
+        setModules(modulesWithLessons);
+        
+        // Abrir primeiro módulo por padrão
+        if (modulesWithLessons.length > 0) {
+          setExpandedModules([Number(modulesWithLessons[0].id)]);
+          if (modulesWithLessons[0].lessons.length > 0) {
+            setCurrentLesson(modulesWithLessons[0].lessons[0]);
+          }
+        } else if (lessonData && lessonData.length > 0) {
+          // Fallback se não houver módulos mas houver aulas
+          setCurrentLesson(lessonData[0]);
+        }
+
+      } catch (err) {
+        console.error('Error fetching course player data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourseData();
+    fetchProgress();
+  }, [id, profile]);
+
+  const fetchProgress = async () => {
+    if (!id || !profile) return;
+    try {
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select('lesson_id')
+        .eq('course_id', id)
+        .eq('user_id', profile.id)
+        .eq('completed', true);
+
+      if (error) throw error;
+      setCompletedLessons(data?.map(p => Number(p.lesson_id)) || []);
+    } catch (err) {
+      console.error('Error fetching progress:', err);
     }
-  ];
+  };
+
+  const toggleLessonCompletion = async (lessonId: number) => {
+    if (!profile) {
+      toast.error("Perfil não encontrado. Tente sair e entrar novamente.");
+      return;
+    }
+    
+    try {
+      const isCompleted = completedLessons.includes(lessonId);
+      
+      if (isCompleted) {
+        const { error } = await supabase
+          .from('user_course_progress')
+          .delete()
+          .eq('user_id', profile.id)
+          .eq('lesson_id', lessonId);
+        if (error) throw error;
+        setCompletedLessons(prev => prev.filter(id => id !== lessonId));
+        toast.success("Aula marcada como não concluída");
+      } else {
+        const { error } = await supabase
+          .from('user_course_progress')
+          .insert([{ 
+            course_id: course?.id,
+            user_id: profile.id, 
+            lesson_id: lessonId,
+            completed: true,
+            completed_at: new Date().toISOString()
+          }]);
+
+        if (error) throw error;
+        setCompletedLessons(prev => [...prev, Number(currentLesson.id)]);
+        toast.success("Aula concluída! Parabéns! 🎉");
+      }
+    } catch (err: any) {
+      console.error('Error completing lesson:', err);
+      toast.error("Erro ao atualizar progresso.");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentLesson) {
+      fetchComments(Number(currentLesson.id));
+      fetchMaterials(Number(currentLesson.id));
+    }
+  }, [currentLesson]);
+
+  const fetchMaterials = async (lessonId: number) => {
+    setLoadingMaterials(true);
+    try {
+      const { data, error } = await supabase
+        .from('lesson_materials')
+        .select('*')
+        .eq('lesson_id', lessonId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMaterials(data || []);
+    } catch (err) {
+      console.error("Error fetching materials:", err);
+    } finally {
+      setLoadingMaterials(false);
+    }
+  };
+
+  const handleAddMaterial = async () => {
+    if (!newMaterial.title.trim() || !newMaterial.url.trim() || !currentLesson) return;
+
+    setIsAddingMaterial(true);
+    try {
+      const { error } = await supabase
+        .from('lesson_materials')
+        .insert([{
+          lesson_id: currentLesson.id,
+          title: newMaterial.title.trim(),
+          file_url: newMaterial.url.trim(),
+          file_type: newMaterial.url.split('.').pop()?.toUpperCase() || 'FILE'
+        }]);
+
+      if (error) throw error;
+
+      setNewMaterial({ title: "", url: "" });
+      setShowAddMaterial(false);
+      fetchMaterials(Number(currentLesson.id));
+      toast.success("Material adicionado com sucesso!");
+    } catch (err) {
+      toast.error("Erro ao adicionar material.");
+    } finally {
+      setIsAddingMaterial(false);
+    }
+  };
+
+  const handleDeleteMaterial = async (id: number) => {
+    if (!window.confirm("Deseja excluir este material?")) return;
+    try {
+      const { error } = await supabase
+        .from('lesson_materials')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setMaterials(prev => prev.filter(m => m.id !== id));
+      toast.success("Material removido.");
+    } catch (err) {
+      toast.error("Erro ao remover material.");
+    }
+  };
+
+  const allLessons = modules.flatMap(m => m.lessons);
+  const currentIndex = allLessons.findIndex(l => l.id === currentLesson?.id);
+  const isLastLesson = currentIndex === allLessons.length - 1 && allLessons.length > 0;
+  const nextLesson = !isLastLesson ? allLessons[currentIndex + 1] : null;
+
+  const handleNextLesson = () => {
+    if (!isLastLesson && nextLesson) {
+      setCurrentLesson(nextLesson);
+      setExpandedModules(prev => Array.from(new Set([...prev, Number(nextLesson.module_id)])));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (isLastLesson) {
+      // Verificar se todas as aulas foram concluídas
+      const allCompleted = allLessons.every(l => completedLessons.includes(Number(l.id)));
+      
+      if (allCompleted) {
+        setShowCertificate(true);
+      } else {
+        toast.warning("Você precisa concluir todas as aulas para emitir o certificado.");
+      }
+    }
+  };
+
+  const fetchComments = async (lessonId: number) => {
+    setLoadingComments(true);
+    try {
+      const { data, error } = await supabase
+        .from('lesson_comments')
+        .select(`
+          *,
+          user:user_profiles (full_name, avatar_url)
+        `)
+        .eq('lesson_id', lessonId)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setComments(data || []);
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !currentLesson || !profile) return;
+
+    setIsPosting(true);
+    try {
+      const { error } = await supabase
+        .from('lesson_comments')
+        .insert([{
+          lesson_id: currentLesson.id,
+          user_id: profile.id,
+          content: newComment.trim(),
+          is_approved: false
+        }]);
+
+      if (error) throw error;
+
+      setNewComment("");
+      fetchComments(Number(currentLesson.id));
+      toast.success("Comentário publicado com sucesso!");
+    } catch (err) {
+      toast.error("Erro ao publicar comentário.");
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const toggleModule = (modId: number) => {
+    setExpandedModules(prev => 
+      prev.includes(modId) ? prev.filter(id => id !== modId) : [...prev, modId]
+    );
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-12 h-12 text-red-500 animate-spin" />
+            <p className="text-zinc-500 font-black uppercase tracking-widest text-xs">Preparando sua aula...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!course) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Ops! Curso não encontrado</h2>
+            <p className="text-zinc-500">O conteúdo que você procura pode ter sido removido ou está indisponível.</p>
+          </div>
+          <button 
+            onClick={() => navigate('/cursos')} 
+            className="bg-white text-black font-black px-8 py-4 rounded-2xl hover:bg-zinc-200 transition-all uppercase text-xs tracking-widest"
+          >
+            Voltar ao Catálogo
+          </button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-120px)]">
-        {/* Main Player Section */}
-        <div className="flex-1 space-y-6">
-          {/* Video Player Placeholder */}
-          <div className="aspect-video bg-zinc-900 rounded-3xl overflow-hidden relative border border-white/5 group shadow-2xl">
-            <img 
-              src={course.thumbnail} 
-              alt="Video Thumbnail" 
-              className="w-full h-full object-cover opacity-40"
-            />
-            
-            {/* Player Controls Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.button 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white shadow-xl shadow-primary/40 group-hover:scale-110 transition-transform"
-              >
-                <Play className="w-8 h-8 fill-current ml-1" />
-              </motion.button>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-6">
-                  <button className="text-white hover:text-primary transition-colors"><SkipBack className="w-6 h-6" /></button>
-                  <button className="text-white hover:text-primary transition-colors"><Pause className="w-6 h-6 fill-current" /></button>
-                  <button className="text-white hover:text-primary transition-colors"><SkipForward className="w-6 h-6" /></button>
-                  <div className="flex items-center gap-4 ml-4">
-                    <span className="text-xs text-zinc-300">08:24 / 15:10</span>
-                    <div className="w-48 h-1 bg-white/20 rounded-full relative">
-                      <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-primary rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Volume2 className="w-6 h-6 text-white" />
-                  <Maximize className="w-6 h-6 text-white" />
-                </div>
+      <div className="max-w-[1600px] mx-auto pb-20">
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center gap-4 mb-8">
+           <button 
+            onClick={() => navigate('/cursos')}
+            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-white transition-all"
+           >
+             <ArrowLeft size={20} />
+           </button>
+           <div>
+              <h1 className="text-white font-black text-xl tracking-tight">{course.title}</h1>
+              <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                <span>{course.category}</span>
+                <span>•</span>
+                <span>{course.instructor?.full_name}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Lesson Info */}
-          <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-8 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-white mb-2">Edição de Alto Nível: Transições que Convertem</h1>
-                <p className="text-zinc-400 flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                  {course.title} • Por {course.instructor}
-                </p>
-              </div>
-              <button className="bg-primary hover:bg-primary-dark text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
-                <CheckCircle className="w-5 h-5" />
-                Concluir Aula
-              </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-white/5">
-              {[
-                { id: "content", label: "Sobre a aula", icon: <FileText className="w-4 h-4" /> },
-                { id: "comments", label: "Comentários", icon: <MessageSquare className="w-4 h-4" /> },
-                { id: "downloads", label: "Materiais", icon: <Download className="w-4 h-4" /> },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all relative ${
-                    activeTab === tab.id ? "text-primary" : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                  {activeTab === tab.id && (
-                    <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <div className="py-4 text-zinc-400 leading-relaxed min-h-[150px]">
-              <AnimatePresence mode="wait">
-                {activeTab === "content" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    Nesta aula vamos mergulhar nas técnicas avançadas de edição para redes sociais. 
-                    Você aprenderá como manter a retenção do público nos primeiros 3 segundos e como utilizar o ritmo da música para ditar o corte.
-                  </motion.div>
-                )}
-                {activeTab === "comments" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    Nenhum comentário ainda. Seja o primeiro a perguntar!
-                  </motion.div>
-                )}
-                {activeTab === "downloads" && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                    <button className="flex items-center justify-between w-full p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-primary" />
-                        <span className="text-white text-sm">Guia de Edição (PDF)</span>
-                      </div>
-                      <Download className="w-4 h-4 text-zinc-500" />
-                    </button>
-                    <button className="flex items-center justify-between w-full p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-primary" />
-                        <span className="text-white text-sm">Presets de Cor (ZIP)</span>
-                      </div>
-                      <Download className="w-4 h-4 text-zinc-500" />
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
+           </div>
         </div>
 
-        {/* Sidebar Lesson List */}
-        <div className="w-full lg:w-96 space-y-6">
-          <div className="bg-zinc-900/50 border border-white/10 rounded-3xl overflow-hidden shadow-xl">
-            <div className="p-6 border-b border-white/5 bg-zinc-900/80">
-              <h2 className="text-lg font-bold text-white mb-1">Conteúdo do Curso</h2>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-500">2 Módulos • 6 Aulas</span>
-                <span className="text-xs text-primary font-bold">45% Concluído</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full mt-3 overflow-hidden">
-                <div className="w-[45%] h-full bg-primary" />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Main Content Area (Player & About) */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* Cinematic Player Wrapper */}
+            <div className="aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl shadow-red-500/5 border border-white/5 relative group">
+              {currentLesson?.video_url ? (
+                <iframe
+                  src={currentLesson.video_url}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/50">
+                  <MonitorPlay className="w-20 h-20 text-zinc-800 mb-4" />
+                  <p className="text-zinc-600 font-bold">Nenhum vídeo disponível para esta aula.</p>
+                </div>
+              )}
             </div>
 
-            <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
-              {modules.map((module, mIdx) => (
-                <div key={mIdx}>
-                  <div className="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center justify-between group cursor-pointer">
-                    <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{module.title}</span>
-                    <ChevronDown className="w-4 h-4 text-zinc-500" />
+            {/* Lesson Info Card */}
+            <div className="bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8 md:p-12">
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                  <div className="space-y-2">
+                     <span className="text-red-500 font-black text-[10px] uppercase tracking-[0.2em]">Você está assistindo:</span>
+                     <h2 className="text-3xl font-black text-white tracking-tighter">{currentLesson?.title || "Selecione uma aula"}</h2>
                   </div>
-                  <div className="divide-y divide-white/5">
-                    {module.lessons.map((lesson) => (
-                      <button
-                        key={lesson.id}
-                        onClick={() => setCurrentLesson(lesson.id)}
-                        className={`w-full px-6 py-4 flex items-center gap-4 transition-all hover:bg-primary/5 group ${
-                          currentLesson === lesson.id ? "bg-primary/10 border-l-4 border-primary" : ""
+                  <div className="flex items-center gap-3">
+                     <button 
+                        onClick={() => currentLesson && toggleLessonCompletion(Number(currentLesson.id))}
+                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                          currentLesson && completedLessons.includes(Number(currentLesson.id))
+                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                            : "bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white"
                         }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
-                          lesson.completed 
-                            ? "bg-primary/20 border-primary/40 text-primary" 
-                            : "bg-zinc-800 border-white/10 text-zinc-500 group-hover:border-primary/50"
-                        }`}>
-                          {lesson.completed ? <CheckCircle className="w-4 h-4" /> : lesson.id}
-                        </div>
-                        <div className="text-left overflow-hidden">
-                          <p className={`text-sm font-medium truncate ${
-                            currentLesson === lesson.id ? "text-primary" : "text-zinc-300"
-                          }`}>
-                            {lesson.title}
-                          </p>
-                          <span className="text-[10px] text-zinc-500">{lesson.duration}</span>
-                        </div>
-                      </button>
-                    ))}
+                     >
+                        <CheckCircle size={18} />
+                        {currentLesson && completedLessons.includes(Number(currentLesson.id)) ? "Aula Concluída" : "Concluir Aula"}
+                     </button>
                   </div>
-                </div>
-              ))}
+               </div>
+
+               {/* Tabs Netflix Style */}
+               <div className="flex gap-10 border-b border-white/5 mb-8">
+                  {[
+                    { id: "about", label: "Descrição", icon: <FileText size={16} /> },
+                    { id: "materials", label: "Arquivos", icon: <Download size={16} /> },
+                    { id: "community", label: "Comunidade", icon: <MessageSquare size={16} /> }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`pb-6 flex items-center gap-2 text-sm font-black uppercase tracking-widest transition-all relative ${activeTab === tab.id ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                      {activeTab === tab.id && (
+                        <motion.div layoutId="player-tab" className="absolute bottom-0 left-0 right-0 h-1 bg-red-600 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+               </div>
+
+               <div className="text-zinc-400 text-lg leading-relaxed max-w-4xl">
+                  {activeTab === "about" && (
+                    <div className="space-y-8">
+                      {currentLesson?.description && (
+                        <div className="prose prose-invert max-w-none">
+                          <p className="whitespace-pre-wrap text-white text-lg leading-relaxed">
+                            {currentLesson.description}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="pt-8 border-t border-white/5">
+                        <h4 className="text-white font-black text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                          <BookOpen size={16} className="text-red-500" />
+                          Descrição
+                        </h4>
+                        <p className="text-zinc-400 text-sm leading-relaxed whitespace-pre-wrap bg-white/5 p-6 rounded-3xl border border-white/5">
+                          {course?.description || "Nenhuma descrição geral disponível para este treinamento."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {activeTab === "materials" && (
+                    <div className="space-y-6">
+                      {profile?.role === 'admin' && (
+                        <div className="mb-8">
+                          {!showAddMaterial ? (
+                            <button 
+                              onClick={() => setShowAddMaterial(true)}
+                              className="w-full py-4 border-2 border-dashed border-white/10 rounded-[2rem] text-zinc-500 hover:text-white hover:border-red-500/50 hover:bg-red-500/5 transition-all font-bold text-sm flex items-center justify-center gap-2"
+                            >
+                              <Plus size={18} />
+                              Adicionar Novo Material
+                            </button>
+                          ) : (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-white/5 border border-white/10 p-6 rounded-[2.5rem] space-y-4"
+                            >
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Título do Arquivo</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Ex: PDF Complementar da Aula"
+                                    value={newMaterial.title}
+                                    onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500/50"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">URL do Arquivo</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="https://exemplo.com/arquivo.pdf"
+                                    value={newMaterial.url}
+                                    onChange={(e) => setNewMaterial({ ...newMaterial, url: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-red-500/50"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-2">
+                                <button 
+                                  onClick={() => setShowAddMaterial(false)}
+                                  className="px-6 py-2.5 text-xs font-bold text-zinc-500 hover:text-white transition-all"
+                                >
+                                  Cancelar
+                                </button>
+                                <button 
+                                  disabled={isAddingMaterial || !newMaterial.title || !newMaterial.url}
+                                  onClick={handleAddMaterial}
+                                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                                >
+                                  {isAddingMaterial ? <Loader2 className="animate-spin" size={16} /> : "Salvar Arquivo"}
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      )}
+
+                      {loadingMaterials ? (
+                        <div className="flex justify-center py-10">
+                          <Loader2 className="animate-spin text-zinc-600" />
+                        </div>
+                      ) : materials.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {materials.map((file) => (
+                            <div key={file.id} className="bg-white/5 border border-white/10 p-5 rounded-3xl flex items-center justify-between group hover:border-red-500/30 transition-all">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-all">
+                                  <Download size={20} />
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-bold text-white group-hover:text-red-500 transition-all">{file.title}</h4>
+                                  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{file.file_type} • ARQUIVO</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <a 
+                                  href={file.file_url} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all"
+                                  title="Download"
+                                >
+                                  <Download size={18} />
+                                </a>
+                                {profile?.role === 'admin' && (
+                                  <button 
+                                    onClick={() => handleDeleteMaterial(file.id)}
+                                    className="p-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                           <Download className="mx-auto mb-4 text-zinc-800" size={32} />
+                           <p className="text-zinc-600 font-bold text-sm">Nenhum material complementar disponível para esta aula.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {activeTab === "community" && (
+                    <div className="space-y-8 mt-4">
+                       {/* Input Area */}
+                       <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] flex items-center gap-4 focus-within:border-red-500/50 transition-all">
+                          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 border border-white/5">
+                             <UserIcon size={20} className="text-zinc-500" />
+                          </div>
+                          <input 
+                            type="text" 
+                            placeholder="Diga algo sobre esta aula..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
+                            className="bg-transparent border-none outline-none flex-1 text-white text-sm placeholder:text-zinc-600"
+                          />
+                          <button 
+                            disabled={isPosting || !newComment.trim()}
+                            onClick={handlePostComment}
+                            className="p-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:bg-zinc-800 rounded-xl transition-all"
+                          >
+                             {isPosting ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                          </button>
+                       </div>
+
+                       {/* Comments List */}
+                       <div className="space-y-6">
+                          {loadingComments ? (
+                            <div className="flex justify-center py-10">
+                               <Loader2 className="animate-spin text-zinc-600" />
+                            </div>
+                          ) : comments.length > 0 ? (
+                            comments.map((comment) => (
+                              <div key={comment.id} className="flex gap-4 group">
+                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-800 shrink-0 border border-white/5">
+                                    {comment.user?.avatar_url ? (
+                                      <img src={comment.user.avatar_url} className="w-full h-full object-cover" alt="" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-zinc-500 font-bold text-xs">
+                                         {comment.user?.full_name?.charAt(0) || 'U'}
+                                      </div>
+                                    )}
+                                 </div>
+                                 <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-3">
+                                       <span className="text-sm font-bold text-white">{comment.user?.full_name || 'Usuário'}</span>
+                                       <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+                                          {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+                                       </span>
+                                    </div>
+                                    <p className="text-sm text-zinc-400 leading-relaxed">{comment.content}</p>
+                                 </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                               <MessageSquare className="mx-auto mb-4 text-zinc-800" size={32} />
+                               <p className="text-zinc-600 font-bold">Seja o primeiro a comentar nesta aula!</p>
+                            </div>
+                          )}
+                       </div>
+                    </div>
+                  )}
+               </div>
             </div>
           </div>
 
-          {/* Instructor Card */}
-          <div className="bg-gradient-to-br from-primary/20 to-accent/20 border border-white/10 rounded-3xl p-6">
-            <h3 className="text-sm font-bold text-white mb-4">Sobre o Instrutor</h3>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full border-2 border-primary overflow-hidden">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructor}`} alt={course.instructor} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">{course.instructor}</p>
-                <p className="text-xs text-zinc-400">Especialista em Redes Sociais</p>
-              </div>
+          {/* Sidebar Playlist (Netflix Style) */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden sticky top-8">
+               <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
+                  <h3 className="text-lg font-black text-white uppercase tracking-tighter">Conteúdo do Curso</h3>
+                  <div className="p-2 bg-red-500/10 rounded-lg">
+                     <Bookmark className="text-red-500" size={16} />
+                  </div>
+               </div>
+
+               <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  {modules.map((mod, modIdx) => (
+                    <div key={mod.id} className="border-b border-white/5 last:border-0">
+                       <button 
+                        onClick={() => toggleModule(Number(mod.id))}
+                        className="w-full p-6 flex items-center justify-between hover:bg-white/5 transition-all text-left"
+                       >
+                          <div className="flex items-center gap-4">
+                             <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-black text-zinc-500">
+                                {modIdx + 1}
+                             </div>
+                             <div>
+                                <h4 className="text-sm font-bold text-white line-clamp-1">{mod.title}</h4>
+                                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{mod.lessons.length} Aulas</span>
+                             </div>
+                          </div>
+                          {expandedModules.includes(Number(mod.id)) ? <ChevronUp size={18} className="text-zinc-700" /> : <ChevronDown size={18} className="text-zinc-700" />}
+                       </button>
+
+                       <AnimatePresence>
+                          {expandedModules.includes(Number(mod.id)) && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden bg-black/20"
+                            >
+                               {mod.lessons.map((lesson, lessonIdx) => (
+                                 <button 
+                                  key={lesson.id}
+                                  onClick={() => setCurrentLesson(lesson)}
+                                  className={`w-full p-6 flex items-start gap-4 transition-all group border-l-4 ${currentLesson?.id === lesson.id ? "bg-red-500/5 border-red-500" : "border-transparent hover:bg-white/5"}`}
+                                 >
+                                    <div className="w-24 aspect-video rounded-xl overflow-hidden bg-zinc-800 shrink-0 border border-white/5 relative">
+                                       <img 
+                                        src={lesson.thumbnail_url || course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400"} 
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform" 
+                                        alt="" 
+                                       />
+                                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <Play size={16} className="text-white fill-current" />
+                                       </div>
+                                    </div>
+                                    <div className="text-left space-y-1">
+                                       <h5 className={`text-xs font-bold leading-tight line-clamp-2 ${currentLesson?.id === lesson.id ? "text-red-500" : "text-zinc-300 group-hover:text-white"}`}>
+                                          {lesson.title}
+                                       </h5>
+                                       <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-black uppercase tracking-tighter">
+                                          <Clock size={10} />
+                                          <span>{lesson.duration || "Aula "+(lessonIdx+1)}</span>
+                                          {completedLessons.includes(Number(lesson.id)) && (
+                                            <span className="flex items-center gap-1 text-emerald-500 ml-auto">
+                                              <CheckCircle size={10} />
+                                              Concluída
+                                            </span>
+                                          )}
+                                       </div>
+                                    </div>
+                                 </button>
+                               ))}
+                            </motion.div>
+                          )}
+                       </AnimatePresence>
+                    </div>
+                  ))}
+
+                  {modules.length === 0 && (
+                    <div className="p-12 text-center">
+                       <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Nenhuma aula cadastrada ainda.</p>
+                    </div>
+                  )}
+               </div>
+            </div>
+            
+            {/* Promo Card Next Lesson */}
+            <div 
+              onClick={handleNextLesson}
+              className={`${isLastLesson ? "bg-emerald-600 shadow-emerald-600/20" : "bg-red-600 shadow-red-600/20"} rounded-[2.5rem] p-8 relative overflow-hidden group cursor-pointer shadow-2xl active:scale-95 transition-all`}
+            >
+               <div className="relative z-10">
+                  <h4 className="text-white font-black text-xl tracking-tighter mb-2">
+                    {isLastLesson ? "Treinamento Concluído" : "Dominando a Rede"}
+                  </h4>
+                  <p className="text-white/70 text-xs font-bold mb-6">
+                    {isLastLesson 
+                      ? "Você chegou ao fim deste curso! Garanta sua certificação." 
+                      : `Próxima aula: ${nextLesson?.title || "Carregando..."}`}
+                  </p>
+                  <button className="bg-white text-zinc-900 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-zinc-100 transition-colors">
+                     {isLastLesson ? (
+                       <>
+                        <Award size={14} className="text-emerald-600" fill="currentColor" />
+                        Emitir Certificado
+                       </>
+                     ) : (
+                       <>
+                        <Play size={14} className="text-red-600" fill="currentColor" />
+                        Assistir Agora
+                       </>
+                     )}
+                  </button>
+               </div>
+               {isLastLesson ? (
+                 <Award className="absolute -right-4 -bottom-4 text-white/5 w-32 h-32 rotate-12 group-hover:rotate-45 transition-transform duration-700" />
+               ) : (
+                 <Star className="absolute -right-4 -bottom-4 text-white/5 w-32 h-32 rotate-12 group-hover:rotate-45 transition-transform duration-700" />
+               )}
             </div>
           </div>
         </div>
       </div>
+
+      <CertificateModal 
+        isOpen={showCertificate}
+        onClose={() => setShowCertificate(false)}
+        studentName={profile?.full_name || "Afiliado Orgino"}
+        courseTitle={course?.title || "Treinamento Orgino Group"}
+        completionDate={new Date().toLocaleDateString('pt-BR')}
+        instructorName="Orgino Group"
+      />
     </Layout>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../../components/Layout/Layout";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -12,19 +12,137 @@ import {
   History,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
-import { recentTransactions } from "../../mocks/dashboardData";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { Tables } from "../../types/database";
+
+type Transaction = {
+  id: string | number;
+  type: string;
+  amount: number;
+  date: string;
+  status: string;
+  origin: string;
+  isNegative: boolean;
+};
 
 export default function Statement() {
+  const { profile, loading: authLoading } = useAuth();
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [amount, setAmount] = useState("");
+  const [stats, setStats] = useState<Tables<'affiliate_stats'> | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [withdrawing, setWithdrawing] = useState(false);
 
-  const handleWithdraw = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (authLoading) return;
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch stats
+        const { data: statsData } = await supabase
+          .from('affiliate_stats')
+          .select('*')
+          .eq('affiliate_id', profile.id)
+          .single();
+        
+        setStats(statsData);
+
+        // Fetch Commissions
+        const { data: comms } = await supabase
+          .from('commissions')
+          .select(`
+            *,
+            order:orders (
+              customer:user_profiles!customer_id (full_name)
+            )
+          `)
+          .eq('affiliate_id', profile.id)
+          .order('created_at', { ascending: false });
+
+        // Fetch Withdrawals
+        const { data: withdrawals } = await supabase
+          .from('withdrawals')
+          .select('*')
+          .eq('user_id', profile.id)
+          .order('created_at', { ascending: false });
+
+        // Combine and format
+        const combined: Transaction[] = [
+          ...(comms || []).map(c => ({
+            id: `c-${c.id}`,
+            type: 'Comissão',
+            amount: Number(c.amount),
+            date: c.created_at,
+            status: c.status || 'pending',
+            origin: (c.order as any)?.customer?.full_name || 'Venda Direta',
+            isNegative: false
+          })),
+          ...(withdrawals || []).map(w => ({
+            id: `w-${w.id}`,
+            type: 'Saque',
+            amount: Number(w.amount_requested),
+            date: w.created_at,
+            status: w.status || 'pending',
+            origin: 'Sua Conta',
+            isNegative: true
+          }))
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        setTransactions(combined);
+      } catch (err) {
+        console.error('Error fetching financial data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [profile]);
+
+  const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!profile || !amount || Number(amount) <= 0) return;
+
+    setWithdrawing(true);
     setStep(2);
-    setTimeout(() => setStep(3), 2000);
+    
+    try {
+      const requested = Number(amount);
+      const fee = 4.90;
+      const net = requested - fee;
+
+      const { error } = await supabase
+        .from('withdrawals')
+        .insert({
+          user_id: profile.id,
+          amount_requested: requested,
+          fee_amount: fee,
+          net_amount: net,
+          status: 'pending',
+          pix_key: profile.referral_code || 'N/A' // Simulating pix key with referral code or something else
+        });
+
+      if (error) throw error;
+
+      // Update local balance (optimistic or wait for trigger)
+      setTimeout(() => setStep(3), 1500);
+    } catch (err) {
+      console.error('Error requesting withdrawal:', err);
+      setStep(1);
+    } finally {
+      setWithdrawing(false);
+    }
   };
 
   const closeModal = () => {
@@ -33,18 +151,22 @@ export default function Statement() {
     setAmount("");
   };
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-display font-bold mb-2">Financeiro</h1>
+            <h1 className="text-4xl font-display font-bold mb-2 text-white">Financeiro</h1>
             <p className="text-slate-400 text-lg">Gerencie seus ganhos e solicite saques com facilidade.</p>
           </div>
           
           <button 
             onClick={() => setIsWithdrawModalOpen(true)}
-            className="bg-purple-gradient px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:scale-105 transition-transform shadow-xl shadow-primary/30"
+            className="bg-purple-gradient px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:scale-105 transition-transform shadow-xl shadow-primary/30 text-white"
           >
             <ArrowUpCircle size={22} />
             Solicitar Saque
@@ -54,11 +176,13 @@ export default function Statement() {
         {/* Balance Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="glass-card p-8 rounded-[2.5rem] border-white/5 bg-primary/5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform text-white">
               <Wallet size={80} />
             </div>
             <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Saldo Disponível</p>
-            <h3 className="text-5xl font-display font-bold text-gradient">R$ 12.450,00</h3>
+            <h3 className="text-5xl font-display font-bold text-gradient">
+              {formatCurrency(Number(stats?.available_balance || 0))}
+            </h3>
             <div className="mt-8 flex gap-4">
               <span className="text-xs text-slate-500 font-bold bg-white/5 px-3 py-1 rounded-full border border-white/5">PIX Ativo</span>
             </div>
@@ -66,16 +190,20 @@ export default function Statement() {
 
           <div className="glass-card p-8 rounded-[2.5rem] border-white/5">
             <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Saldo Bloqueado</p>
-            <h3 className="text-4xl font-display font-bold">R$ 4.200,00</h3>
+            <h3 className="text-4xl font-display font-bold text-white">
+              {formatCurrency(Number(stats?.pending_balance || 0))}
+            </h3>
             <p className="text-xs text-slate-500 mt-4 leading-relaxed">Liberação prevista em até <span className="text-white font-bold">7 dias</span> após a venda.</p>
           </div>
 
           <div className="glass-card p-8 rounded-[2.5rem] border-white/5">
             <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Total Sacado</p>
-            <h3 className="text-4xl font-display font-bold">R$ 45.800,00</h3>
+            <h3 className="text-4xl font-display font-bold text-white">
+              {formatCurrency(Number(stats?.total_withdrawn || 0))}
+            </h3>
             <div className="mt-6 flex items-center gap-2 text-emerald-400 text-xs font-bold">
               <ArrowUpCircle size={14} />
-              <span>+15% em relação ao mês anterior</span>
+              <span>Ganhos constantes</span>
             </div>
           </div>
         </div>
@@ -83,7 +211,7 @@ export default function Statement() {
         {/* Transactions Table */}
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-2xl font-display font-bold flex items-center gap-3">
+            <h2 className="text-2xl font-display font-bold flex items-center gap-3 text-white">
               <History className="text-primary" />
               Extrato de Ganhos
             </h2>
@@ -91,54 +219,73 @@ export default function Statement() {
             <div className="flex gap-3">
               <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
                 <Search size={16} className="text-slate-500" />
-                <input type="text" placeholder="Filtrar..." className="bg-transparent border-none outline-none text-xs w-32" />
+                <input type="text" placeholder="Filtrar..." className="bg-transparent border-none outline-none text-xs w-32 text-white" />
               </div>
               <button className="p-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors">
                 <Filter size={18} />
               </button>
-              <button className="p-2 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white transition-colors">
-                <Download size={18} />
-              </button>
             </div>
           </div>
 
-          <div className="glass-card rounded-[2.5rem] border-white/5 overflow-hidden">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-white/[0.02] border-b border-white/5">
-                  <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Tipo</th>
-                  <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Origem</th>
-                  <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Data</th>
-                  <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Status</th>
-                  <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold text-right">Valor</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {recentTransactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${tx.amount.startsWith('-') ? 'bg-red-400/10 text-red-400' : 'bg-emerald-400/10 text-emerald-400'}`}>
-                          {tx.amount.startsWith('-') ? <ArrowUpCircle size={16} /> : <ArrowDownCircle size={16} />}
-                        </div>
-                        <span className="font-bold">{tx.type}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-slate-400">{tx.user}</td>
-                    <td className="px-8 py-6 text-slate-400">{tx.date}</td>
-                    <td className="px-8 py-6">
-                      <span className={`text-[10px] uppercase font-black px-3 py-1 rounded-full ${tx.status === 'completed' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-yellow-400/10 text-yellow-400'}`}>
-                        {tx.status}
-                      </span>
-                    </td>
-                    <td className={`px-8 py-6 text-right font-bold text-lg ${tx.amount.startsWith('-') ? 'text-white' : 'text-emerald-400'}`}>
-                      {tx.amount}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </div>
+          ) : (
+            <div className="glass-card rounded-[2.5rem] border-white/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-white/[0.02] border-b border-white/5">
+                      <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Tipo</th>
+                      <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Origem</th>
+                      <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Data</th>
+                      <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold">Status</th>
+                      <th className="px-8 py-6 text-xs uppercase tracking-widest text-slate-500 font-bold text-right">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {transactions.length > 0 ? (
+                      transactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors group">
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${tx.isNegative ? 'bg-red-400/10 text-red-400' : 'bg-emerald-400/10 text-emerald-400'}`}>
+                                {tx.isNegative ? <ArrowUpCircle size={16} /> : <ArrowDownCircle size={16} />}
+                              </div>
+                              <span className="font-bold text-white">{tx.type}</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 text-slate-400">{tx.origin}</td>
+                          <td className="px-8 py-6 text-slate-400">
+                            {new Date(tx.date).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-8 py-6">
+                            <span className={`text-[10px] uppercase font-black px-3 py-1 rounded-full ${
+                              tx.status === 'completed' || tx.status === 'paid' 
+                                ? 'bg-emerald-400/10 text-emerald-400' 
+                                : 'bg-yellow-400/10 text-yellow-400'
+                            }`}>
+                              {tx.status === 'paid' ? 'Pago' : tx.status === 'completed' ? 'Concluído' : 'Pendente'}
+                            </span>
+                          </td>
+                          <td className={`px-8 py-6 text-right font-bold text-lg ${tx.isNegative ? 'text-white' : 'text-emerald-400'}`}>
+                            {tx.isNegative ? '-' : '+'} {formatCurrency(tx.amount)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-8 py-20 text-center text-slate-500">
+                          Nenhuma transação encontrada.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -198,7 +345,7 @@ export default function Statement() {
                             required
                           />
                         </div>
-                        <p className="text-xs text-zinc-500 ml-1">Saldo disponível: R$ 12.450,00</p>
+                        <p className="text-xs text-zinc-500 ml-1">Saldo disponível: {formatCurrency(Number(stats?.available_balance || 0))}</p>
                       </div>
 
                       <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
@@ -207,15 +354,16 @@ export default function Statement() {
                           <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
                             <CreditCard size={16} className="text-primary" />
                           </div>
-                          (11) 9****-**42
+                          PIX Identificado
                         </div>
                       </div>
 
                       <button
                         type="submit"
-                        className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-95"
+                        disabled={withdrawing || !amount || Number(amount) > Number(stats?.available_balance || 0)}
+                        className="w-full bg-primary disabled:opacity-50 hover:bg-primary-dark text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-95"
                       >
-                        Confirmar Saque
+                        {withdrawing ? 'Processando...' : 'Confirmar Saque'}
                       </button>
                     </motion.form>
                   )}
@@ -247,7 +395,7 @@ export default function Statement() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-white mb-2">Solicitação Enviada!</h3>
-                        <p className="text-zinc-400">Seu saque de <span className="text-white font-bold">R$ {amount}</span> foi solicitado com sucesso.</p>
+                        <p className="text-zinc-400">Seu saque de <span className="text-white font-bold">{formatCurrency(Number(amount))}</span> foi solicitado com sucesso.</p>
                       </div>
                       <button
                         onClick={closeModal}

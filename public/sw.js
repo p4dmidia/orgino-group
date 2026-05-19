@@ -11,6 +11,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
+  // Ignorar chamadas para o Supabase (API e Edge Functions)
+  if (url.hostname.includes('supabase.co')) {
+    return;
+  }
+
   // Ignore Vite-specific and development resources
   if (
     url.pathname.startsWith('/@vite') || 
@@ -18,7 +23,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/node_modules') ||
     url.pathname.includes('hot-update') ||
     url.search.includes('t=') ||
-    url.hostname === 'localhost' && url.port === '3000' && !url.pathname.includes('.')
+    (url.hostname === 'localhost' && url.port === '3000' && !url.pathname.includes('.'))
   ) {
     return;
   }

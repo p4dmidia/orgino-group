@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronRight, ChevronDown, User, TrendingUp, Users, DollarSign, X } from "lucide-react";
+import { ChevronRight, ChevronDown, User, TrendingUp, Users, DollarSign, X, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 
 interface NodeData {
   id: string;
-  name: string;
+  name?: string;
+  full_name?: string;
   level: string;
   referrals: number;
   earnings: string;
@@ -16,6 +18,7 @@ interface NetworkTreeProps {
 }
 
 const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(depth < 1);
   const [showInfo, setShowInfo] = useState(false);
 
@@ -27,18 +30,17 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
       <div className="relative flex flex-col items-center group">
         {/* Node Circle */}
         <motion.div
-          layout
           onClick={() => setShowInfo(true)}
-          className={`relative z-10 w-16 h-16 rounded-full p-[2px] cursor-pointer transition-all hover:scale-110 shadow-lg ${
+          className={`relative z-10 rounded-full p-[2px] cursor-pointer transition-all hover:scale-110 shadow-lg shrink-0 ${
             depth === 0 
-              ? "bg-purple-gradient shadow-primary/30" 
-              : "bg-zinc-800 border border-white/10 hover:border-primary/50"
+              ? "w-16 h-16 bg-purple-gradient shadow-primary/30" 
+              : "w-12 h-12 bg-zinc-800 border border-white/10 hover:border-primary/50"
           }`}
         >
           <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
             <img 
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${node.name}`} 
-              alt={node.name} 
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${node.full_name || node.name}`} 
+              alt={node.full_name || node.name} 
               className="w-full h-full object-cover"
             />
           </div>
@@ -50,9 +52,9 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
         </motion.div>
 
         {/* Label */}
-        <div className="mt-3 text-center">
-          <p className="text-xs font-bold text-white whitespace-nowrap">{node.name}</p>
-          <p className="text-[10px] text-zinc-500 font-medium">{node.level}</p>
+        <div className="mt-2 text-center max-w-[120px]">
+          <p className="text-[11px] font-bold text-white truncate px-2">{node.full_name || node.name}</p>
+          <p className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest">{node.level}</p>
         </div>
 
         {/* Expand/Collapse Toggle */}
@@ -62,15 +64,15 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="mt-2 w-6 h-6 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:border-primary/50 transition-all z-20"
+            className="mt-2 w-5 h-5 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:border-primary/50 transition-all z-20"
           >
-            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
         )}
 
         {/* Connecting Line Down (if expanded) */}
         {hasChildren && isExpanded && (
-          <div className="h-10 w-px bg-gradient-to-b from-primary/50 to-transparent" />
+          <div className="h-8 w-px bg-gradient-to-b from-primary/50 to-transparent" />
         )}
       </div>
 
@@ -129,12 +131,12 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
                 <div className="w-24 h-24 rounded-full bg-purple-gradient p-1 mx-auto mb-4 shadow-xl">
                   <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
                     <img 
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${node.name}`} 
-                      alt={node.name} 
+                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${node.full_name || node.name}`} 
+                      alt={node.full_name || node.name} 
                     />
                   </div>
                 </div>
-                <h3 className="text-2xl font-display font-bold text-white">{node.name}</h3>
+                <h3 className="text-2xl font-display font-bold text-white">{node.full_name || node.name}</h3>
                 <p className="text-primary font-bold text-xs uppercase tracking-widest mt-1">{node.level}</p>
               </div>
 
@@ -152,7 +154,7 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
                     <TrendingUp size={14} />
                     <span className="text-[10px] font-black uppercase">Nível</span>
                   </div>
-                  <p className="text-xl font-bold">Lvl {depth}</p>
+                  <p className="text-xl font-bold">Nível {depth}</p>
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-2xl p-4 col-span-2">
                   <div className="flex items-center gap-2 text-zinc-500 mb-1">
@@ -165,7 +167,10 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
 
               {/* Action Button */}
               <div className="px-8 pb-8">
-                <button className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-2xl border border-white/10 transition-all text-sm">
+                <button 
+                  onClick={() => navigate('/admin/usuarios')}
+                  className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-2xl border border-white/10 transition-all text-sm"
+                >
                   Ver Perfil Detalhado
                 </button>
               </div>
@@ -178,10 +183,50 @@ const TreeNode = ({ node, depth = 0 }: { node: NodeData; depth?: number }) => {
 };
 
 export default function NetworkTree({ data }: NetworkTreeProps) {
+  const [scale, setScale] = useState(1);
+
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
+  const handleReset = () => setScale(1);
+
   return (
-    <div className="w-full overflow-x-auto pb-20 pt-10 scrollbar-hide">
-      <div className="min-w-max px-20">
-        <TreeNode node={data} />
+    <div className="relative w-full bg-black/20 rounded-[3rem] overflow-hidden group">
+      {/* Zoom Controls Overlay */}
+      <div className="absolute top-6 right-6 z-50 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <button 
+          onClick={handleZoomIn}
+          className="p-3 bg-zinc-900 border border-white/10 rounded-xl text-white hover:bg-zinc-800 transition-all shadow-xl"
+          title="Aumentar Zoom"
+        >
+          <ZoomIn size={18} />
+        </button>
+        <button 
+          onClick={handleZoomOut}
+          className="p-3 bg-zinc-900 border border-white/10 rounded-xl text-white hover:bg-zinc-800 transition-all shadow-xl"
+          title="Diminuir Zoom"
+        >
+          <ZoomOut size={18} />
+        </button>
+        <button 
+          onClick={handleReset}
+          className="p-3 bg-zinc-900 border border-white/10 rounded-xl text-primary hover:bg-zinc-800 transition-all shadow-xl"
+          title="Resetar Zoom"
+        >
+          <Maximize size={18} />
+        </button>
+        <div className="bg-zinc-900/80 border border-white/5 px-2 py-1 rounded-lg text-[10px] font-black text-center text-zinc-500 uppercase">
+          {Math.round(scale * 100)}%
+        </div>
+      </div>
+
+      <div className="w-full overflow-x-auto pb-60 pt-20 scrollbar-hide min-h-[1000px]">
+        <motion.div 
+          animate={{ scale }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="min-w-max px-40 origin-top flex justify-center"
+        >
+          <TreeNode node={data} />
+        </motion.div>
       </div>
     </div>
   );

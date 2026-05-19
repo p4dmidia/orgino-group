@@ -8,21 +8,23 @@ import {
   Wallet, 
   Settings, 
   LogOut,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert,
+  BarChart3
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const MENU_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: LayoutDashboard, label: "Início", path: "/dashboard" },
+  { icon: BarChart3, label: "Desempenho", path: "/dashboard/afiliado" },
   { icon: Users, label: "Minha Rede", path: "/rede" },
   { icon: PlayCircle, label: "Vídeos", path: "/videos" },
-  { icon: GraduationCap, label: "Cursos", path: "/cursos" },
+  { icon: GraduationCap, label: "Treinamentos", path: "/cursos" },
   { icon: CreditCard, label: "Cartão Orgino", path: "/beneficios-membros" },
   { icon: Wallet, label: "Financeiro", path: "/financeiro" },
 ];
-
-import logoImg from "../../assets/logo.png";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -32,8 +34,10 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     navigate("/auth/login");
   };
 
@@ -85,6 +89,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </Link>
             );
           })}
+          
+          {/* Administração removida conforme solicitado */}
         </nav>
 
         <div className="p-4 mt-auto">
@@ -92,22 +98,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-purple-gradient p-[2px]">
                 <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.full_name || user?.user_metadata?.firstName || 'user'}`} alt="User" />
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-bold">Alex Rivera</p>
-                <p className="text-xs text-slate-500">Nível 4 • Influencer</p>
+              <div className="overflow-hidden">
+                <p className="text-sm font-bold truncate">{profile?.full_name || `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim() || 'Usuário'}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                  {profile?.role === 'admin' ? 'Administrador' : `Parceiro • ${profile?.referral_code || user?.user_metadata?.login || '---'}`}
+                </p>
               </div>
             </div>
             <div className="h-1 bg-white/10 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: "75%" }}
+                animate={{ width: "10%" }}
                 className="h-full bg-purple-gradient"
               />
             </div>
-            <p className="text-[10px] text-slate-500 mt-2 text-right">75% para Nível 5</p>
+            <p className="text-[10px] text-slate-500 mt-2 text-right">Iniciando jornada</p>
           </div>
 
           <button 

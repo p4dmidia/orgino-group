@@ -55,7 +55,7 @@ export default function LandingPage() {
             className="text-center lg:text-left"
           >
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black leading-[1.1] mb-6 md:mb-8">
-              Orgino Group <span className="text-gradient">Plataform</span>
+              Orgino Group <span className="text-gradient">Plataforma</span>
             </h1>
             <p className="text-lg md:text-xl text-slate-400 mb-8 md:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed">
               A plataforma onde influenciadores crescem juntos, monetizam em rede e apoiam uma causa maior. Junte-se à nova era da Creator Economy.
