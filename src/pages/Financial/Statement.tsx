@@ -53,7 +53,7 @@ export default function Statement() {
         const { data: statsData } = await supabase
           .from('affiliate_stats')
           .select('*')
-          .eq('affiliate_id', profile.id)
+          .eq('user_id', profile.id)
           .single();
         
         setStats(statsData);

@@ -8,4 +8,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+  },
+});

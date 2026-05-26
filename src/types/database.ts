@@ -1403,6 +1403,7 @@ export type Database = {
           id: number
           is_active: boolean | null
           mocha_user_id: string
+          neighborhood: string | null
           number: string | null
           phone: string | null
           pix_key: string | null
@@ -1427,6 +1428,7 @@ export type Database = {
           id?: number
           is_active?: boolean | null
           mocha_user_id: string
+          neighborhood?: string | null
           number?: string | null
           phone?: string | null
           pix_key?: string | null
@@ -1451,6 +1453,7 @@ export type Database = {
           id?: number
           is_active?: boolean | null
           mocha_user_id?: string
+          neighborhood?: string | null
           number?: string | null
           phone?: string | null
           pix_key?: string | null

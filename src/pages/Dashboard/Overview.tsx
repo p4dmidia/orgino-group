@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { getUserFirstName } from "../../lib/utils";
 import { toast } from "react-hot-toast";
 import { Tables } from "../../types/database";
 
@@ -40,6 +41,7 @@ export default function Overview() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileForm, setProfileForm] = useState({
     fullName: "",
+    username: "",
     phone: "",
     pixKey: "",
     pixType: "",
@@ -56,8 +58,17 @@ export default function Overview() {
 
   const openProfileModal = () => {
     if (profile) {
+      const metaName = user?.user_metadata?.full_name || 
+                       user?.user_metadata?.name || 
+                       `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim();
+      
+      const initialFullName = (profile.full_name === "Usuário Sincronizado" || !profile.full_name)
+        ? (metaName || "")
+        : profile.full_name;
+
       setProfileForm({
-        fullName: profile.full_name || "",
+        fullName: initialFullName,
+        username: profile.referral_code || user?.user_metadata?.login || "",
         phone: profile.phone || "",
         pixKey: profile.pix_key || "",
         pixType: profile.pix_type || "",
@@ -109,10 +120,33 @@ export default function Overview() {
     if (!profile) return;
     setModalLoading(true);
     try {
-      const { error } = await supabase
+      const cleanUsername = profileForm.username.trim().replace(/[^a-zA-Z0-9_-]/g, "");
+      if (!cleanUsername) {
+        toast.error("Por favor, insira um nome de usuário válido.");
+        setModalLoading(false);
+        return;
+      }
+
+      if (cleanUsername !== profile.referral_code) {
+        const { data: existingUser, error: checkError } = await supabase
+          .from("user_profiles")
+          .select("id")
+          .eq("referral_code", cleanUsername)
+          .maybeSingle();
+
+        if (checkError) throw checkError;
+        if (existingUser) {
+          toast.error("Este nome de usuário já está sendo utilizado.");
+          setModalLoading(false);
+          return;
+        }
+      }
+
+      const { error: profileError } = await supabase
         .from("user_profiles")
         .update({
           full_name: profileForm.fullName,
+          referral_code: cleanUsername,
           phone: profileForm.phone,
           pix_key: profileForm.pixKey,
           pix_type: profileForm.pixType,
@@ -126,7 +160,16 @@ export default function Overview() {
         })
         .eq("id", profile.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Sincroniza os metadados do Auth do Supabase
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { login: cleanUsername }
+      });
+      if (authError) {
+        console.warn("Aviso ao atualizar metadados do Auth:", authError);
+      }
+
       toast.success("Perfil atualizado com sucesso!");
       setShowProfileModal(false);
       await refreshProfile();
@@ -260,7 +303,7 @@ export default function Overview() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="text-4xl font-display font-bold mb-2 text-white">
-              Olá, {profile?.full_name?.split(' ')[0] || user?.user_metadata?.firstName || 'Usuário'}! 👋
+              Olá, {getUserFirstName(profile, user)}! 👋
             </h1>
             <p className="text-slate-400 text-lg">Seu ecossistema de influência está <span className="text-primary font-bold">pronto para crescer</span>.</p>
           </div>
@@ -455,13 +498,23 @@ export default function Overview() {
                   Dados Pessoais
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
                     <label className="text-xs font-semibold text-slate-300">Nome Completo</label>
                     <input
                       type="text"
                       required
                       value={profileForm.fullName}
                       onChange={(e) => setProfileForm(prev => ({ ...prev, fullName: e.target.value }))}
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-300">Nome de Usuário</label>
+                    <input
+                      type="text"
+                      required
+                      value={profileForm.username}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, username: e.target.value }))}
                       className="w-full bg-black/40 border border-white/10 rounded-2xl py-3.5 px-4 text-white text-sm focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>

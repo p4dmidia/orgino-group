@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Mail, Lock, ArrowRight, User, ShieldCheck, Globe, CheckCircle2, Ticket, Loader2, AlertCircle } from "lucide-react";
+import { Mail, Lock, ArrowRight, User, ShieldCheck, Globe, CheckCircle2, Ticket, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { toast } from "react-hot-toast";
@@ -34,6 +34,7 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const [sponsorName, setSponsorName] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const ref = searchParams.get("ref");
@@ -341,25 +342,22 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-300 ml-1">Usuário</label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">@</div>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    placeholder="username"
-                    className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-                    required
-                    disabled={loading}
-                  />
-                </div>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="Nome de usuário"
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                  required
+                  disabled={loading}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300 ml-1">CPF/CNPJ</label>
+                <label className="text-sm font-medium text-zinc-300 ml-1">CPF OU CNPJ</label>
                 <input
                   type="text"
                   name="cpfCnpj"
@@ -522,15 +520,22 @@ export default function Register() {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   required
                   disabled={loading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 

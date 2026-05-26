@@ -15,6 +15,7 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { useAuth } from "../../contexts/AuthContext";
+import { getUserDisplayName } from "../../lib/utils";
 
 const MENU_ITEMS = [
   { icon: LayoutDashboard, label: "Início", path: "/dashboard" },
@@ -40,6 +41,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     await signOut();
     navigate("/auth/login");
   };
+
+  const userDisplayName = profile?.referral_code || user?.user_metadata?.login || getUserDisplayName(profile, user);
 
   return (
     <>
@@ -98,13 +101,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-purple-gradient p-[2px]">
                 <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden">
-                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.full_name || user?.user_metadata?.firstName || 'user'}`} alt="User" />
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userDisplayName}`} alt="User" />
                 </div>
               </div>
               <div className="overflow-hidden">
-                <p className="text-sm font-bold truncate">{profile?.full_name || `${user?.user_metadata?.firstName || ''} ${user?.user_metadata?.lastName || ''}`.trim() || 'Usuário'}</p>
+                <p className="text-sm font-bold truncate">{userDisplayName}</p>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                  {profile?.role === 'admin' ? 'Administrador' : `Parceiro • ${profile?.referral_code || user?.user_metadata?.login || '---'}`}
+                  {profile?.role === 'admin' ? 'Administrador' : `Parceiro • ${profile?.email || user?.email || '---'}`}
                 </p>
               </div>
             </div>

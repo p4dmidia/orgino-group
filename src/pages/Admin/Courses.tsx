@@ -439,7 +439,10 @@ export default function AdminCourses() {
             <p className="text-zinc-500 text-sm mt-1">Plataforma de capacitação Orgino Group.</p>
           </div>
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
             className="bg-primary hover:bg-primary text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 active:scale-95"
           >
             <Plus size={20} />

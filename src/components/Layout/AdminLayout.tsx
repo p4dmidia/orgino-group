@@ -123,22 +123,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <Menu size={24} />
             </button>
-
-            <div className="hidden md:flex items-center gap-4 bg-zinc-900/50 border border-white/10 px-4 py-2 rounded-2xl w-64 lg:w-96">
-              <Search size={18} className="text-zinc-500" />
-              <input 
-                type="text" 
-                placeholder="Buscar..." 
-                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-zinc-500"
-              />
-            </div>
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
-            <button className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors">
-              <Search size={22} />
-            </button>
-
             <button className="relative p-2 text-zinc-400 hover:text-white transition-colors">
               <Bell size={22} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-purple-600 rounded-full" />

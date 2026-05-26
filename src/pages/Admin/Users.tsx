@@ -32,6 +32,10 @@ interface UserProfile {
   created_at: string;
   is_active: boolean;
   avatar_url?: string;
+  phone?: string;
+  pix_key?: string;
+  cpf?: string;
+  referral_code?: string;
 }
 
 export default function AdminUsers() {
@@ -52,14 +56,14 @@ export default function AdminUsers() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 md:p-10 bg-black/80 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl"
+        className="bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl my-4 md:my-8 relative"
         onClick={e => e.stopPropagation()}
       >
         <div className="relative h-32 bg-gradient-to-r from-red-600 to-red-900">
@@ -71,9 +75,9 @@ export default function AdminUsers() {
           </button>
         </div>
         
-        <div className="px-10 pb-10 -mt-16">
+        <div className="px-10 pb-10 -mt-16 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end gap-6 mb-8">
-            <div className="w-32 h-32 rounded-[2rem] border-4 border-zinc-900 overflow-hidden bg-zinc-800 shadow-xl">
+            <div className="w-32 h-32 rounded-[2rem] border-4 border-zinc-900 overflow-hidden bg-zinc-800 shadow-xl relative z-10">
               <img 
                 src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.full_name}`} 
                 alt="" 
@@ -155,12 +159,16 @@ export default function AdminUsers() {
 
   const toggleUserStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('user_profiles')
         .update({ is_active: !currentStatus })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Erro de permissão ou perfil não encontrado no banco.");
+      }
       
       setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: !currentStatus } : u));
       toast.success(`Usuário ${!currentStatus ? 'ativado' : 'desativado'} com sucesso!`);
@@ -174,12 +182,16 @@ export default function AdminUsers() {
     if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
     
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('user_profiles')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Erro de permissão: a exclusão foi bloqueada pelo banco de dados.");
+      }
       
       setUsers(prev => prev.filter(u => u.id !== id));
       toast.success("Usuário excluído com sucesso!");

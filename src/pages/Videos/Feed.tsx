@@ -3,9 +3,11 @@ import Layout from "../../components/Layout/Layout";
 import { motion, AnimatePresence } from "motion/react";
 import { Heart, MessageCircle, Share2, Bookmark, Music, Plus, Play, Pause, Volume2, VolumeX, Loader2, Link2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import { supabase as supabaseClient } from "../../lib/supabase";
+const supabase = supabaseClient as any;
 import { Tables } from "../../types/database";
 import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "sonner";
 
 type Video = Tables<'videos_feed'> & {
   user?: { full_name: string } | null;
@@ -104,19 +106,27 @@ const VideoCard = ({ video, isActive }: { video: Video, isActive: boolean }) => 
   const fetchComments = async () => {
     setCommentsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('video_comments')
         .select(`
           id,
           content,
           created_at,
+          is_approved,
           user:user_profiles (
             full_name,
             role
           )
         `)
-        .eq('video_id', video.id)
-        .order('created_at', { ascending: true });
+        .eq('video_id', video.id);
+
+      if (profile?.id) {
+        query = query.or(`is_approved.eq.true,user_id.eq.${profile.id}`);
+      } else {
+        query = query.eq('is_approved', true);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: true });
 
       if (error) throw error;
       setComments(data || []);
@@ -138,12 +148,14 @@ const VideoCard = ({ video, isActive }: { video: Video, isActive: boolean }) => 
         .insert({
           video_id: video.id,
           user_id: profile.id,
-          content: newComment.trim()
+          content: newComment.trim(),
+          is_approved: false
         })
         .select(`
           id,
           content,
           created_at,
+          is_approved,
           user:user_profiles (
             full_name,
             role
@@ -157,8 +169,10 @@ const VideoCard = ({ video, isActive }: { video: Video, isActive: boolean }) => 
       setNewComment("");
       setCommentsCount(prev => prev + 1);
       video.comments_count = (video.comments_count || 0) + 1;
+      toast.success("Comentário enviado para moderação!");
     } catch (err) {
       console.error('Error submitting comment:', err);
+      toast.error("Erro ao enviar comentário.");
     } finally {
       setIsSubmittingComment(false);
     }
@@ -378,7 +392,6 @@ const VideoCard = ({ video, isActive }: { video: Video, isActive: boolean }) => 
           <div>
             <h4 className="font-bold text-lg flex items-center gap-2">
               {video.user?.full_name || 'Usuário'}
-              <button className="bg-primary px-3 py-1 rounded-full text-[10px] uppercase font-black animate-pulse">Seguir</button>
             </h4>
           </div>
         </div>
@@ -386,11 +399,6 @@ const VideoCard = ({ video, isActive }: { video: Video, isActive: boolean }) => 
         <p className="text-sm text-slate-200 line-clamp-2">
           {video.description}
         </p>
-
-        <div className="flex items-center gap-2 text-primary font-bold text-xs">
-          <Music size={14} className="animate-spin-slow" />
-          <span>Som original - Orgino Beats</span>
-        </div>
       </div>
 
       {/* Comments Drawer/Sheet */}
@@ -447,6 +455,11 @@ const VideoCard = ({ video, isActive }: { video: Video, isActive: boolean }) => 
                           {c.user?.role === 'admin' && (
                             <span className="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
                               Admin
+                            </span>
+                          )}
+                          {!c.is_approved && (
+                            <span className="bg-yellow-500/10 text-yellow-500 text-[8px] font-black px-1.5 py-0.5 rounded uppercase border border-yellow-500/20">
+                              Pendente
                             </span>
                           )}
                           <span className="text-[9px] text-slate-400">

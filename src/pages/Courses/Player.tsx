@@ -25,10 +25,12 @@ import {
   User as UserIcon
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import { supabase as supabaseClient } from "../../lib/supabase";
+const supabase = supabaseClient as any;
 import { Tables } from "../../types/database";
 import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "sonner";
+import { getUserDisplayName } from "../../lib/utils";
 import CertificateModal from "../../components/Courses/CertificateModal";
 
 type Course = Tables<'courses'> & {
@@ -45,7 +47,7 @@ type Lesson = Tables<'lessons'>;
 export default function CoursePlayer() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -283,15 +285,21 @@ export default function CoursePlayer() {
   const fetchComments = async (lessonId: number) => {
     setLoadingComments(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('lesson_comments')
         .select(`
           *,
           user:user_profiles (full_name, avatar_url)
         `)
-        .eq('lesson_id', lessonId)
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false });
+        .eq('lesson_id', lessonId);
+
+      if (profile?.id) {
+        query = query.or(`is_approved.eq.true,user_id.eq.${profile.id}`);
+      } else {
+        query = query.eq('is_approved', true);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setComments(data || []);
@@ -320,7 +328,7 @@ export default function CoursePlayer() {
 
       setNewComment("");
       fetchComments(Number(currentLesson.id));
-      toast.success("Comentário publicado com sucesso!");
+      toast.success("Comentário enviado para moderação!");
     } catch (err) {
       toast.error("Erro ao publicar comentário.");
     } finally {
@@ -626,12 +634,17 @@ export default function CoursePlayer() {
                                     )}
                                  </div>
                                  <div className="flex-1 space-y-1">
-                                    <div className="flex items-center gap-3">
-                                       <span className="text-sm font-bold text-white">{comment.user?.full_name || 'Usuário'}</span>
-                                       <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
-                                          {new Date(comment.created_at).toLocaleDateString('pt-BR')}
-                                       </span>
-                                    </div>
+                                     <div className="flex items-center gap-3">
+                                        <span className="text-sm font-bold text-white">{comment.user?.full_name || 'Usuário'}</span>
+                                        <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+                                           {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+                                        </span>
+                                        {!comment.is_approved && (
+                                          <span className="text-[9px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-yellow-500/20">
+                                             Pendente
+                                          </span>
+                                        )}
+                                     </div>
                                     <p className="text-sm text-zinc-400 leading-relaxed">{comment.content}</p>
                                  </div>
                               </div>
@@ -774,7 +787,7 @@ export default function CoursePlayer() {
       <CertificateModal 
         isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
-        studentName={profile?.full_name || "Afiliado Orgino"}
+        studentName={getUserDisplayName(profile, user)}
         courseTitle={course?.title || "Treinamento Orgino Group"}
         completionDate={new Date().toLocaleDateString('pt-BR')}
         instructorName="Orgino Group"

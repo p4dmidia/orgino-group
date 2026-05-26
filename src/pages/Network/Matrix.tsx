@@ -6,6 +6,7 @@ import NetworkTree from "../../components/Network/NetworkTree";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Tables } from "../../types/database";
+import { getUserDisplayName } from "../../lib/utils";
 
 type NetworkMember = {
   id: string | number;
@@ -17,7 +18,7 @@ type NetworkMember = {
   direct_count?: number;
 };
 
-const NetworkNode = ({ node, depth = 0 }: { node: NetworkMember, depth?: number }) => (
+const NetworkNode = ({ node, depth = 0 }: { node: NetworkMember, depth?: number, key?: any }) => (
   <div className="space-y-4">
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -65,7 +66,7 @@ const NetworkNode = ({ node, depth = 0 }: { node: NetworkMember, depth?: number 
 );
 
 export default function Matrix() {
-  const { profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
   const [referrals, setReferrals] = useState<NetworkMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +121,7 @@ export default function Matrix() {
 
   const rootNode: NetworkMember = {
     id: profile?.id || 'root',
-    full_name: `Você (${profile?.full_name || 'Usuário'})`,
+    full_name: `Você (${getUserDisplayName(profile, user)})`,
     role: profile?.role || 'Master',
     referral_code: profile?.referral_code || '',
     created_at: profile?.created_at || new Date().toISOString(),

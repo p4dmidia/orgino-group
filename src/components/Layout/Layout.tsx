@@ -24,22 +24,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <Menu size={24} />
             </button>
-
-            <div className="hidden md:flex items-center gap-4 bg-white/5 border border-white/10 px-4 py-2 rounded-2xl w-64 lg:w-96">
-              <Search size={18} className="text-slate-500" />
-              <input 
-                type="text" 
-                placeholder="Buscar na plataforma..." 
-                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-500"
-              />
-            </div>
           </div>
 
           <div className="flex items-center gap-3 md:gap-6">
-            <button className="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
-              <Search size={22} />
-            </button>
-
             <div className="relative">
               <button 
                 onClick={() => {

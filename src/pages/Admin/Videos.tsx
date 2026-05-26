@@ -282,9 +282,9 @@ export default function AdminVideos() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-xl bg-zinc-900 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden"
+              className="relative w-full max-w-xl max-h-[90vh] bg-zinc-900 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <div className="p-8 border-b border-white/5 flex justify-between items-center shrink-0">
                 <div>
                   <h2 className="text-2xl font-bold text-white">Novo Vídeo</h2>
                   <p className="text-zinc-500 text-sm">Preencha os dados do vídeo para o feed</p>
@@ -294,160 +294,162 @@ export default function AdminVideos() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                <div className="grid grid-cols-2 gap-4 p-1 bg-black/40 rounded-2xl border border-white/5">
-                  <button 
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'video' }))}
-                    className={`py-3 rounded-xl text-sm font-bold transition-all ${formData.type === 'video' ? 'bg-primary text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
-                  >
-                    Arquivo MP4/WebM
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'youtube' }))}
-                    className={`py-3 rounded-xl text-sm font-bold transition-all ${formData.type === 'youtube' ? 'bg-red-500 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
-                  >
-                    Link YouTube
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {formData.type === 'video' ? (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-400 ml-1">Arquivo de Vídeo</label>
-                      <div 
-                        onClick={() => document.getElementById('video-file-upload')?.click()}
-                        className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-6 transition-all relative overflow-hidden cursor-pointer ${
-                          videoFile ? "border-primary/50 bg-primary/5" : "border-white/10 hover:border-primary/30 bg-black/40"
-                        }`}
-                      >
-                        {videoFile ? (
-                          <div className="text-center space-y-2">
-                            <VideoIcon className="text-primary w-10 h-10 mx-auto" />
-                            <p className="text-sm font-bold text-white truncate max-w-[300px]">{videoFile.name}</p>
-                            <p className="text-xs text-zinc-500">{(videoFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                            <button 
-                              type="button" 
-                              onClick={(e) => { e.stopPropagation(); setVideoFile(null); }}
-                              className="text-red-400 text-xs font-bold hover:underline"
-                            >
-                              Alterar arquivo
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-center space-y-2">
-                            <Upload className="text-zinc-500 w-8 h-8 mx-auto" />
-                            <p className="text-sm font-bold text-white">Clique para fazer upload do vídeo</p>
-                            <p className="text-xs text-zinc-500">MP4 ou WebM, até 100MB</p>
-                          </div>
-                        )}
-                        <input 
-                          id="video-file-upload"
-                          type="file" 
-                          className="hidden" 
-                          accept="video/*"
-                          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-zinc-400 ml-1">Link do YouTube</label>
-                      <div className="relative">
-                        <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={18} />
-                        <input 
-                          required
-                          type="url"
-                          placeholder="https://youtube.com/watch?v=..."
-                          value={formData.video_url}
-                          onChange={(e) => setFormData(prev => ({ ...prev, video_url: e.target.value }))}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-400 ml-1">Descrição / Legenda</label>
-                    <textarea 
-                      required
-                      placeholder="Sobre o que é este vídeo?"
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm min-h-[100px] resize-none"
-                    />
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-8 pb-4 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+                  <div className="grid grid-cols-2 gap-4 p-1 bg-black/40 rounded-2xl border border-white/5">
+                    <button 
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, type: 'video' }))}
+                      className={`py-3 rounded-xl text-sm font-bold transition-all ${formData.type === 'video' ? 'bg-primary text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                    >
+                      Arquivo MP4/WebM
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, type: 'youtube' }))}
+                      className={`py-3 rounded-xl text-sm font-bold transition-all ${formData.type === 'youtube' ? 'bg-red-500 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                    >
+                      Link YouTube
+                    </button>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-400 ml-1">URL da Thumbnail (Opcional)</label>
-                    <input 
-                      type="url"
-                      placeholder="https://exemplo.com/thumb.jpg"
-                      value={formData.thumbnail_url}
-                      onChange={(e) => setFormData(prev => ({ ...prev, thumbnail_url: e.target.value }))}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-                    />
-                  </div>
-
-                  {/* Segmentação Regional */}
-                  <div className="space-y-3 pt-2">
-                    <div className="flex justify-between items-center">
-                      <label className="text-sm font-medium text-zinc-400 ml-1">Estados Destino (Segmentação Regional)</label>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setTargetStates(BRAZILIAN_STATES)}
-                          className="text-[10px] text-primary font-bold hover:underline"
+                  <div className="space-y-4">
+                    {formData.type === 'video' ? (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-zinc-400 ml-1">Arquivo de Vídeo</label>
+                        <div 
+                          onClick={() => document.getElementById('video-file-upload')?.click()}
+                          className={`border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-6 transition-all relative overflow-hidden cursor-pointer ${
+                            videoFile ? "border-primary/50 bg-primary/5" : "border-white/10 hover:border-primary/30 bg-black/40"
+                          }`}
                         >
-                          Selecionar Todos
-                        </button>
-                        <span className="text-[10px] text-zinc-600">|</span>
-                        <button
-                          type="button"
-                          onClick={() => setTargetStates([])}
-                          className="text-[10px] text-zinc-400 hover:underline"
-                        >
-                          Limpar
-                        </button>
+                          {videoFile ? (
+                            <div className="text-center space-y-2">
+                              <VideoIcon className="text-primary w-10 h-10 mx-auto" />
+                              <p className="text-sm font-bold text-white truncate max-w-[300px]">{videoFile.name}</p>
+                              <p className="text-xs text-zinc-500">{(videoFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                              <button 
+                                type="button" 
+                                onClick={(e) => { e.stopPropagation(); setVideoFile(null); }}
+                                className="text-red-400 text-xs font-bold hover:underline"
+                              >
+                                Alterar arquivo
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-center space-y-2">
+                              <Upload className="text-zinc-500 w-8 h-8 mx-auto" />
+                              <p className="text-sm font-bold text-white">Clique para fazer upload do vídeo</p>
+                              <p className="text-xs text-zinc-500">MP4 ou WebM, até 100MB</p>
+                            </div>
+                          )}
+                          <input 
+                            id="video-file-upload"
+                            type="file" 
+                            className="hidden" 
+                            accept="video/*"
+                            onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                          />
+                        </div>
                       </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-zinc-400 ml-1">Link do YouTube</label>
+                        <div className="relative">
+                          <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={18} />
+                          <input 
+                            required
+                            type="url"
+                            placeholder="https://youtube.com/watch?v=..."
+                            value={formData.video_url}
+                            onChange={(e) => setFormData(prev => ({ ...prev, video_url: e.target.value }))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-zinc-400 ml-1">Descrição / Legenda</label>
+                      <textarea 
+                        required
+                        placeholder="Sobre o que é este vídeo?"
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm min-h-[100px] resize-none"
+                      />
                     </div>
-                    
-                    <div className="grid grid-cols-6 sm:grid-cols-9 gap-2 max-h-[140px] overflow-y-auto p-2 bg-black/40 border border-white/5 rounded-2xl no-scrollbar">
-                      {BRAZILIAN_STATES.map((uf) => {
-                        const isSelected = targetStates.includes(uf);
-                        return (
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-zinc-400 ml-1">URL da Thumbnail (Opcional)</label>
+                      <input 
+                        type="url"
+                        placeholder="https://exemplo.com/thumb.jpg"
+                        value={formData.thumbnail_url}
+                        onChange={(e) => setFormData(prev => ({ ...prev, thumbnail_url: e.target.value }))}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                      />
+                    </div>
+
+                    {/* Segmentação Regional */}
+                    <div className="space-y-3 pt-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-zinc-400 ml-1">Estados Destino (Segmentação Regional)</label>
+                        <div className="flex gap-2">
                           <button
-                            key={uf}
                             type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                setTargetStates(prev => prev.filter(state => state !== uf));
-                              } else {
-                                setTargetStates(prev => [...prev, uf]);
-                              }
-                            }}
-                            className={`py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                              isSelected 
-                                ? 'bg-primary/20 border-primary text-primary shadow-sm shadow-primary/20' 
-                                : 'bg-zinc-950 border-white/5 text-zinc-500 hover:text-white hover:border-white/10'
-                            }`}
+                            onClick={() => setTargetStates(BRAZILIAN_STATES)}
+                            className="text-[10px] text-primary font-bold hover:underline"
                           >
-                            {uf}
+                            Selecionar Todos
                           </button>
-                        );
-                      })}
+                          <span className="text-[10px] text-zinc-600">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setTargetStates([])}
+                            className="text-[10px] text-zinc-400 hover:underline"
+                          >
+                            Limpar
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-6 sm:grid-cols-9 gap-2 max-h-[140px] overflow-y-auto p-2 bg-black/40 border border-white/5 rounded-2xl no-scrollbar">
+                        {BRAZILIAN_STATES.map((uf) => {
+                          const isSelected = targetStates.includes(uf);
+                          return (
+                            <button
+                              key={uf}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setTargetStates(prev => prev.filter(state => state !== uf));
+                                } else {
+                                  setTargetStates(prev => [...prev, uf]);
+                                }
+                              }}
+                              className={`py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                                isSelected 
+                                  ? 'bg-primary/20 border-primary text-primary shadow-sm shadow-primary/20' 
+                                  : 'bg-zinc-950 border-white/5 text-zinc-500 hover:text-white hover:border-white/10'
+                              }`}
+                            >
+                              {uf}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] text-zinc-500 ml-1">
+                        {targetStates.length === 0 
+                          ? "* Nenhum selecionado. O vídeo será exibido para todos os afiliados." 
+                          : `* Segmentado para os ${targetStates.length} estados selecionados.`
+                        }
+                      </p>
                     </div>
-                    <p className="text-[10px] text-zinc-500 ml-1">
-                      {targetStates.length === 0 
-                        ? "* Nenhum selecionado. O vídeo será exibido para todos os afiliados." 
-                        : `* Segmentado para os ${targetStates.length} estados selecionados.`
-                      }
-                    </p>
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-4">
+                <div className="p-8 pt-4 border-t border-white/5 flex gap-4 shrink-0">
                   <button 
                     type="button"
                     onClick={() => { setIsModalOpen(false); setVideoFile(null); }}
