@@ -55,7 +55,7 @@ export default function InstallPWA() {
         <div className="glass-card bg-black/90 border-primary/20 p-6 rounded-[2.5rem] shadow-2xl shadow-primary/20 flex flex-col gap-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full p-[3px] bg-gradient-to-tr from-[#00A3FF] via-[#7000FF] to-[#FF00D6]">
+              <div className="w-12 h-12 rounded-full p-[3px] bg-gradient-to-tr from-[#0047FF] to-[#00d2ff]">
                 <div className="w-full h-full rounded-full bg-black" />
               </div>
               <div>

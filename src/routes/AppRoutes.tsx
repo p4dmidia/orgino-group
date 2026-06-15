@@ -29,6 +29,9 @@ import CareerPlan from "../pages/Network/CareerPlan";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import PublicVideo from "../pages/Public/PublicVideo";
 import AffiliateDashboard from "../pages/Dashboard/AffiliateDashboard";
+import Institutional from "../pages/Public/Institutional";
+import CollaborativeGrowth from "../pages/Public/CollaborativeGrowth";
+import TimeStrategy from "../pages/Public/TimeStrategy";
 
 function ReferralRedirect() {
   const { sponsorCode } = useParams();
@@ -37,7 +40,7 @@ function ReferralRedirect() {
   const knownPaths = [
     "como-funciona", "sobre", "beneficios", "auth", "admin", "dashboard", 
     "videos", "rede", "financeiro", "carreira", "cursos", "beneficios-membros",
-    "v"
+    "v", "conectando-mentes", "crescimento-colaborativo", "tempo-estrategia"
   ];
   
   if (sponsorCode && knownPaths.includes(sponsorCode.split('/')[0])) {
@@ -55,6 +58,9 @@ export default function AppRoutes() {
         <Route path="/como-funciona" element={<HowItWorks />} />
         <Route path="/sobre" element={<AboutUs />} />
         <Route path="/beneficios" element={<PublicBenefits />} />
+        <Route path="/conectando-mentes" element={<Institutional />} />
+        <Route path="/crescimento-colaborativo" element={<CollaborativeGrowth />} />
+        <Route path="/tempo-estrategia" element={<TimeStrategy />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />

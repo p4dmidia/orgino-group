@@ -12,10 +12,11 @@ import {
   CheckCircle,
   CreditCard,
   PlayCircle,
-  Sprout
+  Sprout,
+  ChevronDown
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "../assets/hero-creator.png";
+import heroImage from "../assets/hero-creator.jpg";
 
 const IMAGES = {
   hero: heroImage,
@@ -42,7 +43,100 @@ const SectionHeading = ({ children, badge, subtitle }: { children: React.ReactNo
   </div>
 );
 
+const FAQ_ITEMS = [
+  {
+    question: "O que é o Orgino Group?",
+    answer: "O Orgino Group é uma plataforma criada para conectar pessoas a oportunidades através de produtos, serviços, capacitação digital e projetos sociais voltados ao desenvolvimento humano."
+  },
+  {
+    question: "O Orgino Group é uma empresa legalizada?",
+    answer: "Sim. O Orgino Group atua de forma transparente, oferecendo produtos e serviços legítimos, respeitando as normas e legislações aplicáveis no Brasil."
+  },
+  {
+    question: "Qual a diferença entre o Orgino Group e uma pirâmide financeira?",
+    answer: "O Orgino Group possui produtos e serviços reais.\n\nNosso principal produto é o Cartão Saúde Orgino Group.\n\nNossos serviços incluem capacitação digital e formação de influenciadores digitais.\n\nEmpresas legítimas comercializam produtos e serviços. Pirâmides financeiras normalmente dependem exclusivamente da entrada de novas pessoas."
+  },
+  {
+    question: "O que é o Cartão Saúde Orgino Group?",
+    answer: "É o principal produto da plataforma, desenvolvido para oferecer benefícios e facilitar o acesso a serviços na área da saúde."
+  },
+  {
+    question: "Preciso ser associado para adquirir o Cartão Saúde?",
+    answer: "Não. O Cartão Saúde também poderá ser adquirido diretamente por pessoas que desejam apenas utilizar seus benefícios, sem participar da plataforma."
+  },
+  {
+    question: "O Cartão Saúde ajuda algum projeto social?",
+    answer: "Sim. Parte dos recursos arrecadados através da comercialização do Cartão Saúde será destinada ao desenvolvimento dos projetos sociais apoiados pelo Orgino Group."
+  },
+  {
+    question: "O que é o curso de monetização digital?",
+    answer: "É um programa de capacitação criado para ensinar pessoas comuns a desenvolver presença digital, criar conteúdos e compreender os processos de monetização das principais plataformas digitais."
+  },
+  {
+    question: "Qualquer pessoa pode se tornar um influenciador digital?",
+    answer: "Sim. Acreditamos que qualquer pessoa pode desenvolver habilidades digitais quando recebe orientação, conhecimento e apoio adequados."
+  },
+  {
+    question: "O Orgino Group promete ganhos rápidos ou dinheiro fácil?",
+    answer: "Não. Acreditamos no crescimento sustentável através da disciplina, dedicação, aprendizado contínuo e trabalho honesto."
+  },
+  {
+    question: "Quantos seguidores preciso ter para me tornar um influenciador digital?",
+    answer: "Não existe um número exato.\n\nEntretanto, uma comunidade engajada com aproximadamente 10 mil seguidores já pode gerar excelentes resultados.\n\nMais importante que a quantidade é a qualidade da audiência."
+  },
+  {
+    question: "O que é mais importante: quantidade ou qualidade dos seguidores?",
+    answer: "Qualidade.\n\nSeguidores que curtem, comentam, compartilham e interagem possuem muito mais valor do que grandes números sem engajamento."
+  },
+  {
+    question: "Em quais plataformas devo trabalhar?",
+    answer: "Recomendamos:\n\n* Instagram\n* TikTok\n* Kwai\n* Facebook\n* YouTube"
+  },
+  {
+    question: "Posso criar conteúdos e publicar em minhas redes sociais?",
+    answer: "Sim. Incentivamos a criação de conteúdos próprios, especialmente sobre temas que você domina e possui conhecimento para compartilhar."
+  },
+  {
+    question: "Existe alguma regra para os conteúdos publicados?",
+    answer: "Sim. O respeito é um valor inegociável dentro do Orgino Group.\n\nNão serão permitidos conteúdos com ofensas, ataques pessoais, discriminação ou desrespeito a pessoas que possuam opiniões diferentes."
+  },
+  {
+    question: "Posso fazer campanha política dentro da plataforma?",
+    answer: "Não. Qualquer conteúdo político deverá passar previamente pela análise do Comitê de Avaliação do Orgino Group."
+  },
+  {
+    question: "O que acontece se eu publicar conteúdo político sem autorização?",
+    answer: "O conteúdo poderá ser removido e o associado poderá perder benefícios disponibilizados pela plataforma, conforme as regras internas."
+  },
+  {
+    question: "Posso produzir comerciais para empresas?",
+    answer: "Sim. O Orgino Group incentiva o empreendedorismo digital e a prestação de serviços de divulgação e publicidade."
+  },
+  {
+    question: "O Orgino Group oferece orientação sobre valores para publicidade?",
+    answer: "Sim. Disponibilizamos materiais de orientação para auxiliar os influenciadores na definição de preços para seus serviços."
+  },
+  {
+    question: "Como funciona o projeto social voltado ao autismo?",
+    answer: "Estamos desenvolvendo um projeto de inclusão e acolhimento para crianças com Transtorno do Espectro Autista e suas famílias, com foco em qualidade de vida, desenvolvimento, lazer e integração social."
+  },
+  {
+    question: "O projeto também atende as famílias?",
+    answer: "Sim. Nosso objetivo é acolher não apenas as crianças, mas toda a família, oferecendo um ambiente de apoio, convivência e fortalecimento emocional."
+  },
+  {
+    question: "Como o Orgino Group valoriza a terceira idade?",
+    answer: "Acreditamos que a experiência de vida possui um valor inestimável.\n\nPor isso incentivamos a participação da terceira idade através do compartilhamento de histórias, conhecimentos e experiências que possam inspirar outras pessoas."
+  },
+  {
+    question: "Qual é a filosofia do Orgino Group?",
+    answer: "Crescer com propósito.\nTrabalhar com transparência.\nRespeitar as pessoas.\nGerar oportunidades.\nTransformar vidas.\n\nORGINO GROUP\nConectando Mentes a Oportunidades.\nTransformando Vidas.\nDeixando Legado."
+  }
+];
+
 export default function LandingPage() {
+  const [activeFaq, setActiveFaq] = React.useState<number | null>(null);
+
   return (
     <PublicLayout>
       {/* Hero Section */}
@@ -256,6 +350,50 @@ export default function LandingPage() {
             Cadastrar-se Agora
           </Link>
         </motion.div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 px-6 max-w-4xl mx-auto border-t border-white/5">
+        <div className="text-center mb-16">
+          <span className="text-accent font-display text-sm uppercase tracking-widest block mb-4">
+            Dúvidas Frequentes
+          </span>
+          <h2 className="text-3xl md:text-5xl font-display font-bold text-white">
+            Perguntas Frequentes <span className="text-gradient">(FAQ)</span>
+          </h2>
+        </div>
+
+        <div className="space-y-4">
+          {FAQ_ITEMS.map((faq, index) => {
+            const isOpen = activeFaq === index;
+            return (
+              <div 
+                key={index} 
+                className="glass-card rounded-2xl border-white/5 overflow-hidden transition-all duration-300"
+              >
+                <button
+                  onClick={() => setActiveFaq(isOpen ? null : index)}
+                  className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-base md:text-lg text-white hover:bg-white/[0.02] transition-colors gap-4"
+                >
+                  <span>{faq.question}</span>
+                  <ChevronDown 
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 text-accent" : ""}`} 
+                  />
+                </button>
+                
+                <div 
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="px-6 pb-6 text-slate-400 leading-relaxed whitespace-pre-line text-sm md:text-base border-t border-white/5 pt-4">
+                    {faq.answer}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
     </PublicLayout>
   );

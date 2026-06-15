@@ -200,12 +200,12 @@ export default function PublicVideo() {
     <div className="min-h-screen bg-radial-dark flex flex-col items-center justify-center py-4 px-2 md:p-6 text-white relative overflow-hidden select-none">
       
       {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#630093]/10 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#a855f7]/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#0047FF]/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#00d2ff]/10 rounded-full blur-[150px] pointer-events-none" />
 
       {/* Floating Logo */}
       <div className="absolute top-4 left-6 z-40 hidden md:flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full p-[4px] bg-gradient-to-tr from-[#00A3FF] via-[#7000FF] to-[#FF00D6]">
+        <div className="w-8 h-8 rounded-full p-[4px] bg-gradient-to-tr from-[#0047FF] to-[#00d2ff]">
           <div className="w-full h-full rounded-full bg-black" />
         </div>
         <span className="text-xl font-display font-black tracking-tight text-white">RGINO</span>

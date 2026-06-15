@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       `}>
         <div className="p-8 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-full p-[6px] bg-gradient-to-tr from-[#00A3FF] via-[#7000FF] to-[#FF00D6]">
+            <div className="w-10 h-10 rounded-full p-[6px] bg-gradient-to-tr from-[#0047FF] to-[#00d2ff]">
               <div className="w-full h-full rounded-full bg-black" />
             </div>
             <span className="text-3xl font-display font-black tracking-tight text-white">RGINO</span>

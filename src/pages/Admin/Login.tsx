@@ -78,7 +78,7 @@ export default function AdminLogin() {
         
         <div className="relative z-10 max-w-lg space-y-12">
           <div className="flex items-center gap-4 mb-16">
-            <div className="w-20 h-20 rounded-full p-[10px] bg-gradient-to-tr from-[#00A3FF] via-[#7000FF] to-[#FF00D6]">
+            <div className="w-20 h-20 rounded-full p-[10px] bg-gradient-to-tr from-[#0047FF] to-[#00d2ff]">
               <div className="w-full h-full rounded-full bg-black" />
             </div>
             <span className="text-6xl font-display font-black tracking-tighter text-white">RGINO</span>

@@ -16,22 +16,39 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <Link to="/" className="flex items-center gap-2 md:gap-3 group">
             <div className="relative flex items-center justify-center h-12 w-12 md:h-16 md:w-16 bg-black">
               {/* The 'O' Icon - Thicker version */}
-              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full p-[6px] md:p-[8px] bg-gradient-to-tr from-[#00A3FF] via-[#7000FF] to-[#FF00D6] group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full p-[6px] md:p-[8px] bg-gradient-to-tr from-[#0047FF] to-[#00d2ff] group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
                 <div className="w-full h-full rounded-full bg-black" />
               </div>
             </div>
             <span className="text-2xl md:text-4xl font-display font-black tracking-tighter text-white group-hover:translate-x-1 transition-transform">RGINO</span>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/como-funciona" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">Como Funciona</Link>
-            <Link to="/sobre" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">Sobre Nós</Link>
-            <Link to="/beneficios" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">Benefícios</Link>
-            <Link to="/auth/login" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">Entrar</Link>
+          <div className="hidden md:flex items-center gap-4 xl:gap-6">
+            <Link to="/como-funciona" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap">Como Funciona</Link>
+            <Link to="/sobre" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap">Sobre Nós</Link>
+            <Link to="/beneficios" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap">Benefícios</Link>
+            <Link 
+              to="/conectando-mentes" 
+              className="text-[9px] lg:text-[10px] font-bold text-accent hover:text-white hover:border-accent/40 transition-colors uppercase tracking-wider border border-accent/20 px-3 py-1.5 rounded-full bg-accent/5 whitespace-nowrap"
+            >
+              Conectando Mentes
+            </Link>
+            <Link 
+              to="/crescimento-colaborativo" 
+              className="text-[9px] lg:text-[10px] font-bold text-slate-300 hover:text-white hover:border-white/30 transition-colors uppercase tracking-wider border border-white/10 px-3 py-1.5 rounded-full bg-white/[0.02] whitespace-nowrap"
+            >
+              Cresc. Colaborativo
+            </Link>
+            <Link 
+              to="/tempo-estrategia" 
+              className="text-[9px] lg:text-[10px] font-bold text-slate-300 hover:text-white hover:border-white/30 transition-colors uppercase tracking-wider border border-white/10 px-3 py-1.5 rounded-full bg-white/[0.02] whitespace-nowrap"
+            >
+              Tempo & Estratégia
+            </Link>
+            <Link to="/auth/login" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors whitespace-nowrap">Entrar</Link>
             <Link 
               to="/auth/register" 
-              className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
             >
               Criar Conta
             </Link>
@@ -57,6 +74,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Link to="/como-funciona" className="text-2xl font-bold" onClick={() => setIsMenuOpen(false)}>Como Funciona</Link>
               <Link to="/sobre" className="text-2xl font-bold" onClick={() => setIsMenuOpen(false)}>Sobre Nós</Link>
               <Link to="/beneficios" className="text-2xl font-bold" onClick={() => setIsMenuOpen(false)}>Benefícios</Link>
+              <Link to="/conectando-mentes" className="text-2xl font-bold text-accent" onClick={() => setIsMenuOpen(false)}>Conectando Mentes a Oportunidades</Link>
+              <Link to="/crescimento-colaborativo" className="text-2xl font-bold text-slate-300" onClick={() => setIsMenuOpen(false)}>Crescimento Colaborativo</Link>
+              <Link to="/tempo-estrategia" className="text-2xl font-bold text-slate-300" onClick={() => setIsMenuOpen(false)}>Tempo e Estratégia</Link>
               <div className="h-px bg-white/5 my-4" />
               <Link to="/auth/login" className="text-xl font-medium text-zinc-400" onClick={() => setIsMenuOpen(false)}>Entrar</Link>
               <Link 

@@ -314,12 +314,12 @@ export default function AffiliateDashboard() {
               >
                 <defs>
                   <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#0052D4" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#0052D4" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorRegistrations" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#00d2ff" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#00d2ff" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -347,7 +347,7 @@ export default function AffiliateDashboard() {
                 <Area 
                   type="monotone" 
                   dataKey="Visualizações" 
-                  stroke="#a855f7" 
+                  stroke="#0052D4" 
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorViews)" 
@@ -355,7 +355,7 @@ export default function AffiliateDashboard() {
                 <Area 
                   type="monotone" 
                   dataKey="Cadastros" 
-                  stroke="#06b6d4" 
+                  stroke="#00d2ff" 
                   strokeWidth={3}
                   fillOpacity={1} 
                   fill="url(#colorRegistrations)" 
