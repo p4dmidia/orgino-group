@@ -13,7 +13,8 @@ import {
   CreditCard,
   PlayCircle,
   Sprout,
-  ChevronDown
+  ChevronDown,
+  ArrowRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "../assets/hero-creator.jpg";
@@ -329,6 +330,73 @@ export default function LandingPage() {
             <div className="absolute -bottom-8 -left-8 glass-card p-6 rounded-3xl border-white/20 bg-black/90">
               <p className="text-3xl font-display font-extrabold text-gradient">10k+</p>
               <p className="text-xs uppercase tracking-widest font-semibold text-slate-400">Influenciadores</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Membership Plan Section */}
+      <section className="py-24 px-6 bg-white/[0.01] border-b border-white/5 relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-5xl mx-auto text-center space-y-12 relative z-10">
+          <SectionHeading badge="PLANO DE ADESÃO" subtitle="Faça parte do ecossistema de influência que mais cresce no Brasil. Ative sua conta agora.">
+            Torne-se um Membro <span className="text-gradient">Premium</span>
+          </SectionHeading>
+
+          <div className="glass-card max-w-2xl mx-auto rounded-[3rem] p-12 border-primary/30 bg-gradient-to-b from-primary/5 to-transparent relative overflow-hidden group shadow-2xl shadow-primary/10">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:scale-110 transition-transform text-white pointer-events-none">
+              <CreditCard size={200} />
+            </div>
+
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <span className="bg-primary/20 text-primary px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border border-primary/20">
+                  Assinatura Anual
+                </span>
+                <div className="pt-6 flex items-center justify-center gap-2">
+                  <span className="text-xl text-slate-500 font-bold">R$</span>
+                  <span className="text-6xl font-display font-black text-white">30,00</span>
+                  <span className="text-lg text-slate-500 font-medium">/ano</span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">Menos de R$ 2,50 por mês para liberar seu potencial máximo de comissões.</p>
+              </div>
+
+              <div className="border-t border-white/5 pt-8 max-w-md mx-auto text-left space-y-4">
+                {[
+                  "Posicionamento na Matriz Global MMN",
+                  "Acesso a todos os treinamentos e cursos premium",
+                  "Cartão Saúde Digital com descontos exclusivos",
+                  "Comissões recorrentes em múltiplos níveis",
+                  "Extrato financeiro com saques diários via PIX"
+                ].map((benefit, i) => (
+                  <div key={i} className="flex items-center gap-3 text-slate-300 text-sm font-semibold">
+                    <CheckCircle className="text-primary w-5 h-5 shrink-0" />
+                    <span>{benefit}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-6">
+                <Link
+                  to="/carrinho"
+                  onClick={() => {
+                    const defaultItem = {
+                      id: "plano_adesao",
+                      name: "Plano de Adesão Orgino Group",
+                      price: 30.00,
+                      quantity: 1,
+                      description: "Acesso completo à plataforma de influência, matriz MMN de comissões, cursos premium e cartão de benefícios digital."
+                    };
+                    localStorage.setItem("orgino_cart", JSON.stringify([defaultItem]));
+                  }}
+                  className="bg-purple-gradient text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-primary/30 inline-flex items-center gap-3 active:scale-95 cursor-pointer"
+                >
+                  Assinar Plano de Adesão
+                  <ArrowRight size={16} className="animate-pulse" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>

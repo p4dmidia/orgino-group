@@ -32,6 +32,8 @@ import AffiliateDashboard from "../pages/Dashboard/AffiliateDashboard";
 import Institutional from "../pages/Public/Institutional";
 import CollaborativeGrowth from "../pages/Public/CollaborativeGrowth";
 import TimeStrategy from "../pages/Public/TimeStrategy";
+import Cart from "../pages/Checkout/Cart";
+import Checkout from "../pages/Checkout/Checkout";
 
 function ReferralRedirect() {
   const { sponsorCode } = useParams();
@@ -40,7 +42,8 @@ function ReferralRedirect() {
   const knownPaths = [
     "como-funciona", "sobre", "beneficios", "auth", "admin", "dashboard", 
     "videos", "rede", "financeiro", "carreira", "cursos", "beneficios-membros",
-    "v", "conectando-mentes", "crescimento-colaborativo", "tempo-estrategia"
+    "v", "conectando-mentes", "crescimento-colaborativo", "tempo-estrategia",
+    "carrinho", "checkout"
   ];
   
   if (sponsorCode && knownPaths.includes(sponsorCode.split('/')[0])) {
@@ -61,6 +64,8 @@ export default function AppRoutes() {
         <Route path="/conectando-mentes" element={<Institutional />} />
         <Route path="/crescimento-colaborativo" element={<CollaborativeGrowth />} />
         <Route path="/tempo-estrategia" element={<TimeStrategy />} />
+        <Route path="/carrinho" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
